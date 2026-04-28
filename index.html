@@ -8,163 +8,63 @@
 <style>
 * { box-sizing: border-box; }
 
-body {
-  margin:0;
-  font-family: Arial;
-  background:#0d47a1;
-  color:white;
-}
+body { margin:0; font-family: Arial; background:#0d47a1; color:white; }
 
 /* HEADER */
-.header {
-  padding:28px 16px 20px;
-  background:#1565c0;
-  text-align:center;
-}
-
-.balance {
-  font-size:34px;
-  font-weight:bold;
-}
+.header { padding:28px 16px 20px; background:#1565c0; text-align:center; }
+.balance { font-size:34px; font-weight:bold; }
 
 /* SCREENS */
-.screen {
-  display:none;
-  padding:16px;
-  padding-bottom:110px;
-}
-
+.screen { display:none; padding:16px; padding-bottom:110px; }
 .active { display:block; }
 
-/* CARD */
-.card {
-  background:white;
-  color:black;
-  padding:14px;
-  border-radius:16px;
-  margin-bottom:14px;
-}
+/* CARD & STATS */
+.card { background:white; color:black; padding:14px; border-radius:16px; margin-bottom:14px; }
+.stats { display:flex; gap:12px; margin-bottom:16px; }
+.stat { flex:1; background:white; color:black; padding:12px; border-radius:14px; text-align:center; }
 
-/* STATS */
-.stats {
-  display:flex;
-  gap:12px;
-  margin-bottom:16px;
-}
+/* INPUT & BUTTON */
+input, select { width:100%; padding:14px; margin-top:8px; border-radius:12px; border:none; background:#f3f3f3; font-size: 16px; }
+button { width:100%; padding:14px; margin-top:10px; border:none; border-radius:12px; background:#1565c0; color:white; font-weight:bold; font-size: 16px; }
+.danger { background:#e53935; }
 
-.stat {
-  flex:1;
-  background:white;
-  color:black;
-  padding:12px;
-  border-radius:14px;
-  text-align:center;
-}
-
-/* INPUT */
-input, select {
-  width:100%;
-  padding:14px;
-  margin-top:8px;
-  border-radius:12px;
-  border:none;
-  background:#f3f3f3;
-}
-
-/* BUTTON */
-button {
-  width:100%;
-  padding:14px;
-  margin-top:10px;
-  border:none;
-  border-radius:12px;
-  background:#1565c0;
-  color:white;
-  font-weight:bold;
-}
-
-.danger {
-  background:#e53935;
-}
-
-/* NAVBAR */
-.navbar {
-  position:fixed;
-  bottom:0;
-  left:0;
-  right:0;
-  display:flex;
-  background:white;
-  border-top:1px solid #ddd;
-  height:65px;
-}
-
-.navbar button {
-  flex:1;
-  background:white;
-  color:#1565c0;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  font-size:12px;
-}
-
-/* FAB */
-.fab {
-  position:fixed;
-  bottom:75px;
-  right:20px;
-  width:60px;
-  height:60px;
-  border-radius:50%;
-  background:#1565c0;
-  color:white;
-  font-size:28px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
+/* NAVBAR & FAB */
+.navbar { position:fixed; bottom:0; left:0; right:0; display:flex; background:white; border-top:1px solid #ddd; height:65px; z-index: 100;}
+.navbar button { flex:1; background:white; color:#1565c0; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:12px; margin-top: 0; border-radius: 0;}
+.fab { position:fixed; bottom:75px; right:20px; width:60px; height:60px; border-radius:50%; background:#1565c0; color:white; font-size:28px; display:flex; align-items:center; justify-content:center; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.3);}
 
 /* PROGRESS */
-.bar {
-  background:#eee;
-  height:8px;
-  border-radius:10px;
-  overflow:hidden;
-  margin-top:6px;
-}
+.bar { background:#eee; height:8px; border-radius:10px; overflow:hidden; margin-top:6px; }
+
+/* HISTORY LIST */
+.history-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; font-size: 14px;}
+.history-item:last-child { border-bottom: none; }
+.history-date { color: #888; font-size: 12px; }
+.text-red { color: #e53935; font-weight: bold;}
+.text-green { color: #4caf50; font-weight: bold;}
 
 /* LOADER */
-#loader {
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:rgba(0,0,0,0.4);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index: 999;
-}
+#loader { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; z-index: 999; }
+.spinner { width:40px; height:40px; border:4px solid #ddd; border-top:4px solid #1565c0; border-radius:50%; animation:spin 1s linear infinite; }
+@keyframes spin { 100% { transform:rotate(360deg); } }
 
-.spinner {
-  width:40px;
-  height:40px;
-  border:4px solid #ddd;
-  border-top:4px solid #1565c0;
-  border-radius:50%;
-  animation:spin 1s linear infinite;
-}
-
-@keyframes spin {
-  100% { transform:rotate(360deg); }
-}
+/* PIN SCREEN */
+#pinScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0d47a1; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+#pinScreen h2 { margin-bottom: 20px; }
+#pinInput { text-align: center; letter-spacing: 10px; font-size: 24px; }
 </style>
 </head>
 
 <body>
+
+<div id="pinScreen">
+  <h2>🔒 Code PIN</h2>
+  <div style="background: white; padding: 20px; border-radius: 16px; width: 100%; max-width: 300px;">
+    <p id="pinMessage" style="color: black; text-align: center; margin-top: 0;">Entrez votre code :</p>
+    <input type="password" id="pinInput" maxlength="4" inputmode="numeric">
+    <button onclick="verifyPin()">Valider</button>
+  </div>
+</div>
 
 <div class="header">
   <div>Solde total disponible</div>
@@ -176,9 +76,7 @@ button {
     <div class="stat">Revenus<br><b id="income"></b></div>
     <div class="stat">Dépensé<br><b id="expenses"></b></div>
   </div>
-
   <div id="homePockets"></div>
-
   <div class="card">
     <button onclick="resetKeep()">🔄 Nouveau mois</button>
     <button class="danger" onclick="resetAll()">⚠️ Reset total</button>
@@ -202,7 +100,6 @@ button {
     <input id="incomeAmount" type="number" placeholder="Montant">
     <button onclick="addIncome()">Ajouter</button>
   </div>
-
   <div class="card">
     <b>Nouvelle dépense</b>
     <select id="txPocket"></select>
@@ -211,12 +108,19 @@ button {
   </div>
 </div>
 
+<div id="history" class="screen">
+  <div class="card">
+    <b>Dernières transactions</b>
+    <div id="historyList" style="margin-top: 10px;"></div>
+  </div>
+</div>
+
 <div class="fab" onclick="showScreen('actions')">+</div>
 
 <div class="navbar">
   <button onclick="showScreen('home')">🏠<span>Accueil</span></button>
   <button onclick="showScreen('pockets')">📦<span>Poches</span></button>
-  <button onclick="showScreen('actions')">💸<span>Actions</span></button>
+  <button onclick="showScreen('history')">📜<span>Historique</span></button>
 </div>
 
 <div id="loader"><div class="spinner"></div></div>
@@ -229,27 +133,78 @@ function hideLoader(){ document.getElementById('loader').style.display="none"; }
 
 let incomes = [];
 let pockets = [];
+let historyData = [];
 
 function showScreen(id){
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
 }
 
-// Fonction utilitaire pour formater les montants en FCFA
 function formatMoney(amount) {
   return new Intl.NumberFormat('fr-FR').format(amount);
 }
 
+// ---- SYSTEME DE CODE PIN ----
+function initApp() {
+  const savedPin = localStorage.getItem('budgetPin');
+  if (!savedPin) {
+    document.getElementById('pinMessage').innerText = "Créez un code PIN à 4 chiffres :";
+  }
+}
+
+function verifyPin() {
+  const input = document.getElementById('pinInput').value;
+  const savedPin = localStorage.getItem('budgetPin');
+
+  if(input.length < 4) return alert("Le code doit faire 4 chiffres.");
+
+  if (!savedPin) {
+    localStorage.setItem('budgetPin', input);
+    alert("PIN enregistré !");
+    document.getElementById('pinScreen').style.display = 'none';
+    load();
+  } else {
+    if (input === savedPin) {
+      document.getElementById('pinScreen').style.display = 'none';
+      load();
+    } else {
+      alert("Code PIN incorrect !");
+      document.getElementById('pinInput').value = "";
+    }
+  }
+}
+initApp();
+// -----------------------------
+
 async function load(){
+  // 1. CHARGEMENT HORS-LIGNE (CACHE)
+  const cachedData = localStorage.getItem("budgetCache");
+  if(cachedData) {
+    const parsed = JSON.parse(cachedData);
+    incomes = parsed.incomes || [];
+    pockets = parsed.pockets || [];
+    historyData = parsed.history || [];
+    update();
+  } else {
+    showLoader();
+  }
+
+  // 2. FETCH EN ARRIERE-PLAN
   try {
     const res = await fetch(API+"?action=getData", { method: "GET", redirect: "follow" });
     const data = await res.json();
+    
+    // Sauvegarde en cache pour la prochaine ouverture
+    localStorage.setItem("budgetCache", JSON.stringify(data));
+    
     incomes = data.incomes;
     pockets = data.pockets;
+    historyData = data.history;
     update();
   } catch(e) {
-    console.error("Erreur de chargement", e);
-    alert("Impossible de charger les données. Vérifiez votre connexion.");
+    console.log("Mode hors-ligne, impossible de joindre le serveur.");
+  } finally {
+    hideLoader();
   }
 }
 
@@ -264,11 +219,11 @@ function update(){
   const txPocket = document.getElementById('txPocket');
   const pocketsDiv = document.getElementById('pocketsDiv');
   const homePockets = document.getElementById('homePockets');
+  const historyList = document.getElementById('historyList');
 
-  txPocket.innerHTML="";
-  pocketsDiv.innerHTML="";
-  homePockets.innerHTML="";
+  txPocket.innerHTML=""; pocketsDiv.innerHTML=""; homePockets.innerHTML=""; historyList.innerHTML="";
 
+  // Update des Poches
   pockets.forEach(p=>{
     const opt = document.createElement("option");
     opt.value = p.name;
@@ -276,8 +231,6 @@ function update(){
     txPocket.appendChild(opt);
 
     const percent = Math.min((p.spent/p.planned)*100, 100);
-    
-    // Changement de couleur dynamique : Vert > Orange > Rouge
     let color = "#4caf50";
     if(percent > 75) color = "#ff9800";
     if(percent >= 100) color = "#f44336";
@@ -290,52 +243,58 @@ function update(){
           <div style="width:${percent}%; background:${color}; height:100%"></div>
         </div>
       </div>`;
-    
     pocketsDiv.innerHTML += html;
     homePockets.innerHTML += html;
   });
+
+  // Update de l'Historique
+  if(historyData.length === 0) {
+    historyList.innerHTML = "<p style='color:#888; text-align:center;'>Aucune transaction.</p>";
+  } else {
+    historyData.forEach(h => {
+      const isDepense = h.type === "Dépense";
+      const colorClass = isDepense ? "text-red" : "text-green";
+      const sign = isDepense ? "-" : "+";
+      
+      historyList.innerHTML += `
+        <div class="history-item">
+          <div>
+            <b>${h.name}</b><br>
+            <span class="history-date">${h.date || 'Récemment'}</span>
+          </div>
+          <div class="${colorClass}">${sign}${formatMoney(h.amount)}</div>
+        </div>
+      `;
+    });
+  }
 }
 
 async function addIncome(){
   const name = document.getElementById('incomeName').value.trim();
   const amount = document.getElementById('incomeAmount').value;
-  
-  if(!name || !amount || isNaN(amount) || amount <= 0) return alert("Veuillez saisir des valeurs valides.");
-
+  if(!name || !amount || isNaN(amount) || amount <= 0) return alert("Données invalides.");
   showLoader();
   await fetch(`${API}?action=add&type=income&name=${encodeURIComponent(name)}&amount=${amount}`, { method: "GET", redirect: "follow" });
-  hideLoader();
-  
-  document.getElementById('incomeName').value = "";
-  document.getElementById('incomeAmount').value = "";
+  document.getElementById('incomeName').value = ""; document.getElementById('incomeAmount').value = "";
   load();
 }
 
 async function addPocket(){
   const name = document.getElementById('pocketName').value.trim();
   const amount = document.getElementById('pocketAmount').value;
-
-  if(!name || !amount || isNaN(amount) || amount <= 0) return alert("Veuillez saisir des valeurs valides.");
-
+  if(!name || !amount || isNaN(amount) || amount <= 0) return alert("Données invalides.");
   showLoader();
   await fetch(`${API}?action=add&type=pocket&name=${encodeURIComponent(name)}&amount=${amount}`, { method: "GET", redirect: "follow" });
-  hideLoader();
-  
-  document.getElementById('pocketName').value = "";
-  document.getElementById('pocketAmount').value = "";
+  document.getElementById('pocketName').value = ""; document.getElementById('pocketAmount').value = "";
   load();
 }
 
 async function addTx(){
   const pocket = document.getElementById('txPocket').value;
   const amount = document.getElementById('txAmount').value;
-
-  if(!pocket || !amount || isNaN(amount) || amount <= 0) return alert("Veuillez sélectionner une poche et un montant valide.");
-
+  if(!pocket || !amount || isNaN(amount) || amount <= 0) return alert("Données invalides.");
   showLoader();
   await fetch(`${API}?action=tx&pocket=${encodeURIComponent(pocket)}&amount=${amount}`, { method: "GET", redirect: "follow" });
-  hideLoader();
-  
   document.getElementById('txAmount').value = "";
   load();
 }
@@ -344,7 +303,6 @@ async function resetKeep(){
   if(confirm("Démarrer un nouveau mois ? Tes poches seront conservées mais vidées.")){
     showLoader();
     await fetch(`${API}?action=reset&mode=keepPockets`, { method: "GET", redirect: "follow" });
-    hideLoader();
     load();
   }
 }
@@ -353,12 +311,10 @@ async function resetAll(){
   if(confirm("Tout supprimer définitivement ?")){
     showLoader();
     await fetch(`${API}?action=reset&mode=all`, { method: "GET", redirect: "follow" });
-    hideLoader();
+    localStorage.removeItem("budgetCache"); // Vide le cache aussi
     load();
   }
 }
-
-load();
 </script>
 
 </body>
