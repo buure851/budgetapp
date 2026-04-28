@@ -8,167 +8,38 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-* { box-sizing: border-box; }
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial;background:#0d47a1;color:white}
 
-body {
-  margin:0;
-  font-family: Arial;
-  background:#0d47a1;
-  color:white;
-}
+.header{padding:28px 16px;text-align:center;background:#1565c0}
+.balance{font-size:32px;font-weight:bold}
 
-/* HEADER */
-.header {
-  padding:28px 16px 20px;
-  background:#1565c0;
-  text-align:center;
-}
+.screen{display:none;padding:16px;padding-bottom:110px}
+.active{display:block}
 
-.balance {
-  font-size:34px;
-  font-weight:bold;
-}
+.card{background:white;color:black;padding:14px;border-radius:16px;margin-bottom:14px}
 
-/* SCREENS */
-.screen {
-  display:none;
-  padding:16px;
-  padding-bottom:110px;
-}
-.active { display:block; }
+.stats{display:flex;gap:10px;margin-bottom:16px}
+.stat{flex:1;background:white;color:black;padding:10px;border-radius:12px;text-align:center}
 
-/* CARD */
-.card {
-  background:white;
-  color:black;
-  padding:14px;
-  border-radius:16px;
-  margin-bottom:14px;
-}
+input,select{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:none;background:#f3f3f3}
 
-/* STATS */
-.stats {
-  display:flex;
-  gap:12px;
-  margin-bottom:16px;
-}
+button{width:100%;padding:12px;margin-top:10px;border:none;border-radius:10px;background:#1565c0;color:white}
 
-.stat {
-  flex:1;
-  background:white;
-  color:black;
-  padding:12px;
-  border-radius:14px;
-  text-align:center;
-}
+.danger{background:#e53935}
 
-/* INPUT */
-input, select {
-  width:100%;
-  padding:14px;
-  margin-top:8px;
-  border-radius:12px;
-  border:none;
-  background:#f3f3f3;
-}
+.navbar{position:fixed;bottom:0;left:0;right:0;display:flex;background:white;height:65px}
+.navbar button{flex:1;background:white;color:#1565c0;font-size:12px}
 
-/* BUTTON */
-button {
-  width:100%;
-  padding:14px;
-  margin-top:10px;
-  border:none;
-  border-radius:12px;
-  background:#1565c0;
-  color:white;
-  font-weight:bold;
-}
+.fab{position:fixed;bottom:75px;right:20px;width:60px;height:60px;border-radius:50%;background:#1565c0;color:white;font-size:28px;display:flex;align-items:center;justify-content:center}
 
-.danger { background:#e53935; }
+.bar{background:#eee;height:8px;border-radius:10px;overflow:hidden;margin-top:6px}
 
-/* NAVBAR */
-.navbar {
-  position:fixed;
-  bottom:0;
-  left:0;
-  right:0;
-  display:flex;
-  background:white;
-  border-top:1px solid #ddd;
-  height:65px;
-}
+#loader{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);display:none;align-items:center;justify-content:center}
+.spinner{width:40px;height:40px;border:4px solid #ddd;border-top:4px solid #1565c0;border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{100%{transform:rotate(360deg)}}
 
-.navbar button {
-  flex:1;
-  background:white;
-  color:#1565c0;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  font-size:12px;
-}
-
-/* FAB */
-.fab {
-  position:fixed;
-  bottom:75px;
-  right:20px;
-  width:60px;
-  height:60px;
-  border-radius:50%;
-  background:#1565c0;
-  color:white;
-  font-size:28px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-/* PROGRESS */
-.bar {
-  background:#eee;
-  height:8px;
-  border-radius:10px;
-  overflow:hidden;
-  margin-top:6px;
-}
-
-/* LOADER */
-#loader {
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:rgba(0,0,0,0.4);
-  display:none;
-  align-items:center;
-  justify-content:center;
-}
-
-.spinner {
-  width:40px;
-  height:40px;
-  border:4px solid #ddd;
-  border-top:4px solid #1565c0;
-  border-radius:50%;
-  animation:spin 1s linear infinite;
-}
-@keyframes spin { 100% { transform:rotate(360deg); } }
-
-/* TOAST */
-#toast {
-  position:fixed;
-  bottom:80px;
-  left:50%;
-  transform:translateX(-50%);
-  background:#323232;
-  color:white;
-  padding:10px 16px;
-  border-radius:20px;
-  display:none;
-}
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#333;color:white;padding:10px 16px;border-radius:20px;display:none}
 </style>
 </head>
 
@@ -179,7 +50,6 @@ button {
   <div class="balance" id="balance">0 FCFA</div>
 </div>
 
-<!-- HOME -->
 <div id="home" class="screen active">
   <div class="stats">
     <div class="stat">Revenus<br><b id="income"></b></div>
@@ -189,23 +59,15 @@ button {
   <canvas id="chart"></canvas>
 
   <div id="homePockets"></div>
-
-  <div class="card">
-    <button onclick="resetKeep()">🔄 Nouveau mois</button>
-    <button class="danger" onclick="resetAll()">⚠️ Reset total</button>
-  </div>
 </div>
 
-<!-- HISTORIQUE -->
 <div id="history" class="screen">
   <div class="card"><b>Historique</b></div>
   <div id="historyList"></div>
 </div>
 
-<!-- POCHES -->
 <div id="pockets" class="screen">
   <div class="card">
-    <b>Créer une poche</b>
     <input id="pocketName">
     <input id="pocketAmount" type="number">
     <button onclick="addPocket()">Créer</button>
@@ -213,81 +75,81 @@ button {
   <div id="pocketsDiv"></div>
 </div>
 
-<!-- ACTIONS -->
 <div id="actions" class="screen">
   <div class="card">
-    <b>Ajouter revenu</b>
     <input id="incomeName">
     <input id="incomeAmount" type="number">
-    <button onclick="addIncome()">Ajouter</button>
+    <button onclick="addIncome()">Ajouter revenu</button>
   </div>
 
   <div class="card">
-    <b>Nouvelle dépense</b>
     <select id="txPocket"></select>
     <input id="txAmount" type="number">
     <button onclick="addTx()">Dépenser</button>
   </div>
 </div>
 
-<!-- FAB -->
 <div class="fab" onclick="showScreen('actions')">+</div>
 
-<!-- NAV -->
 <div class="navbar">
-  <button onclick="showScreen('home')">🏠<span>Accueil</span></button>
-  <button onclick="showScreen('history')">📜<span>Historique</span></button>
-  <button onclick="showScreen('pockets')">📦<span>Poches</span></button>
-  <button onclick="showScreen('actions')">💸<span>Actions</span></button>
+  <button onclick="showScreen('home')">🏠 Accueil</button>
+  <button onclick="showScreen('history')">📜 Historique</button>
+  <button onclick="showScreen('pockets')">📦 Poches</button>
+  <button onclick="showScreen('actions')">💸 Actions</button>
 </div>
 
-<!-- LOADER -->
 <div id="loader"><div class="spinner"></div></div>
-
-<!-- TOAST -->
 <div id="toast"></div>
 
 <script>
 const API = "https://script.google.com/macros/s/AKfycbygLSp3sD0Fxdpgp2TmOlMmT28ifxNMTFdMvVP4oGQG-GTBVds3WiH7HZpxswT9t1TI/exec";
 
-function showLoader(){ loader.style.display="flex"; }
-function hideLoader(){ loader.style.display="none"; }
+let incomes=[], pockets=[], transactions=[], chartInstance=null;
+
+function el(id){ return document.getElementById(id); }
+
+function showLoader(){ el("loader").style.display="flex"; }
+function hideLoader(){ el("loader").style.display="none"; }
 
 function showToast(msg){
-  toast.innerText=msg;
-  toast.style.display="block";
-  setTimeout(()=>toast.style.display="none",2000);
+  const t = el("toast");
+  t.innerText = msg;
+  t.style.display="block";
+  setTimeout(()=>t.style.display="none",2000);
 }
-
-let incomes=[], pockets=[], transactions=[];
 
 function showScreen(id){
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
+  el(id).classList.add("active");
 }
 
 async function load(){
-  const res = await fetch(API+"?action=getData");
-  const data = await res.json();
+  try{
+    const res = await fetch(API+"?action=getData");
+    const data = await res.json();
 
-  incomes=data.incomes;
-  pockets=data.pockets;
-  transactions=data.transactions;
+    incomes = data.incomes || [];
+    pockets = data.pockets || [];
+    transactions = data.transactions || [];
 
-  update();
+    update();
+  }catch(e){
+    showToast("Erreur chargement");
+  }
 }
 
 function update(){
   const totalIncome = incomes.reduce((s,i)=>s+i.amount,0);
   const totalSpent = pockets.reduce((s,p)=>s+p.spent,0);
 
-  balance.innerText = (totalIncome-totalSpent)+" FCFA";
-  income.innerText = totalIncome;
-  expenses.innerText = totalSpent;
+  el("balance").innerText = (totalIncome-totalSpent)+" FCFA";
+  el("income").innerText = totalIncome;
+  el("expenses").innerText = totalSpent;
 
-  // chart
-  if(window.chart) window.chart.destroy();
-  chart = new Chart(document.getElementById("chart"), {
+  // Chart FIX
+  if(chartInstance) chartInstance.destroy();
+
+  chartInstance = new Chart(el("chart"), {
     type:"doughnut",
     data:{
       labels:pockets.map(p=>p.name),
@@ -297,36 +159,35 @@ function update(){
   });
 
   // pockets
-  txPocket.innerHTML="";
-  pocketsDiv.innerHTML="";
-  homePockets.innerHTML="";
+  el("txPocket").innerHTML="";
+  el("pocketsDiv").innerHTML="";
+  el("homePockets").innerHTML="";
 
   pockets.forEach(p=>{
     const opt=document.createElement("option");
     opt.value=p.name;
     opt.textContent=p.name;
-    txPocket.appendChild(opt);
+    el("txPocket").appendChild(opt);
 
-    const percent=Math.min((p.spent/p.planned)*100,100);
+    const percent = p.planned ? Math.min((p.spent/p.planned)*100,100) : 0;
 
-    const html=`
+    const html = `
       <div class="card">
         <b>${p.name}</b><br>
-        Reste: ${p.planned-p.spent} FCFA
+        Reste: ${p.planned - p.spent} FCFA
         <div class="bar">
           <div style="width:${percent}%;background:#4caf50;height:100%"></div>
         </div>
       </div>`;
-    
-    pocketsDiv.innerHTML+=html;
-    homePockets.innerHTML+=html;
+
+    el("pocketsDiv").innerHTML += html;
+    el("homePockets").innerHTML += html;
   });
 
   // history
-  historyList.innerHTML="";
+  el("historyList").innerHTML="";
   transactions.slice().reverse().forEach(t=>{
-    historyList.innerHTML+=`
-      <div class="card">${t.name} - ${t.amount} FCFA</div>`;
+    el("historyList").innerHTML += `<div class="card">${t.name} - ${t.amount} FCFA</div>`;
   });
 }
 
@@ -346,22 +207,6 @@ async function addTx(){
   showLoader();
   await fetch(`${API}?action=tx&pocket=${txPocket.value}&amount=${txAmount.value}`);
   hideLoader(); showToast("Dépense ajoutée"); load();
-}
-
-async function resetKeep(){
-  if(confirm("Nouveau mois ?")){
-    showLoader();
-    await fetch(`${API}?action=reset&mode=keepPockets`);
-    hideLoader(); showToast("Mois réinitialisé"); load();
-  }
-}
-
-async function resetAll(){
-  if(confirm("Tout supprimer ?")){
-    showLoader();
-    await fetch(`${API}?action=reset&mode=all`);
-    hideLoader(); showToast("Tout supprimé"); load();
-  }
 }
 
 load();
