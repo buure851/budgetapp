@@ -17,7 +17,7 @@ body {
 
 /* HEADER */
 .header {
-  padding:24px 16px;
+  padding:28px 16px 20px;
   background:#1565c0;
   text-align:center;
 }
@@ -30,8 +30,8 @@ body {
 /* SCREENS */
 .screen {
   display:none;
-  padding:12px;
-  padding-bottom:100px;
+  padding:16px;
+  padding-bottom:110px;
 }
 
 .active { display:block; }
@@ -42,13 +42,14 @@ body {
   color:black;
   padding:14px;
   border-radius:16px;
-  margin-bottom:12px;
+  margin-bottom:14px;
 }
 
 /* STATS */
 .stats {
   display:flex;
-  gap:10px;
+  gap:12px;
+  margin-bottom:16px;
 }
 
 .stat {
@@ -80,6 +81,11 @@ button {
   background:#1565c0;
   color:white;
   font-weight:bold;
+}
+
+.danger {
+  background:#e53935;
+  margin-top:8px;
 }
 
 /* NAVBAR */
@@ -150,6 +156,12 @@ small { color:#666; }
   </div>
 
   <div id="homePockets"></div>
+
+  <!-- RESET -->
+  <div class="card">
+    <button onclick="resetKeep()">🔄 Nouveau mois</button>
+    <button class="danger" onclick="resetAll()">⚠️ Reset total</button>
+  </div>
 
 </div>
 
@@ -268,6 +280,20 @@ async function addPocket(){
 async function addTx(){
   await fetch(`${API}?action=tx&pocket=${txPocket.value}&amount=${txAmount.value}`);
   load();
+}
+
+async function resetKeep(){
+  if(confirm("Nouveau mois ?")){
+    await fetch(`${API}?action=reset&mode=keepPockets`);
+    load();
+  }
+}
+
+async function resetAll(){
+  if(confirm("Tout supprimer ?")){
+    await fetch(`${API}?action=reset&mode=all`);
+    load();
+  }
 }
 
 load();
