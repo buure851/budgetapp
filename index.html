@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1565c0">
+
+<style>
+body { margin:0; font-family:Arial; background:#0d47a1; color:white; }
+.container { max-width:420px; margin:auto; padding:15px; }
+.card { background:white; color:black; padding:15px; border-radius:15px; margin-bottom:10px; }
+button, input, select { width:100%; padding:12px; margin-top:8px; border-radius:10px; border:none; }
+button { background:#1565c0; color:white; }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <h2>Solde: <span id="balance">0</span> FCFA</h2>
+
+  <div class="card">
+    <input id="incomeName" placeholder="Revenu">
+    <input id="incomeAmount" type="number">
+    <button onclick="addIncome()">Ajouter revenu</button>
+  </div>
+
+  <div class="card">
+    <input id="pocketName" placeholder="Poche">
+    <input id="pocketAmount" type="number">
+    <button onclick="addPocket()">Créer poche</button>
+  </div>
+
+  <div class="card">
+    <select id="txPocket"></select>
+    <input id="txAmount" type="number">
+    <button onclick="addTx()">Dépenser</button>
+  </div>
+
+  <div id="pockets"></div>
+</div>
+
+<script>
+const API = "COLLE_ICI_TON_URL_APPS_SCRIPT";
+
+async function load(){
+  const res = await fetch(API + "?action=getData");
+  const data = await res.json();
+
+  const income = data.incomes.reduce((s,i)=>s+i.amount,0);
+  const spent = data.pockets.reduce((s,p)=>s+p.spent,0);
+
+  balance.innerText = income - spent;
+
+  txPocket.innerHTML="";
+  pockets.innerHTML="";
+
+  data.pockets.forEach(p=>{
+    const opt = document.createElement("option");
+    opt.value=p.name;
+    opt.textContent=p.name;
+    txPocket.appendChild(opt);
+
+    const div=document.createElement("div");
+    div.className="card";
+    div.innerHTML=`${p.name} → reste: ${p.planned - p.spent}`;
+    pockets.appendChild(div);
+  });
+}
+
+async function addIncome(){
+  await fetch(`${API}?action=add&type=income&name=${incomeName.value}&amount=${incomeAmount.value}`);
+  load();
+}
+
+async function addPocket(){
+  await fetch(`${API}?action=add&type=pocket&name=${pocketName.value}&amount=${pocketAmount.value}`);
+  load();
+}
+
+async function addTx(){
+  await fetch(`${API}?action=tx&pocket=${txPocket.value}&amount=${txAmount.value}`);
+  load();
+}
+
+load();
+</script>
+
+</body>
+</html>
