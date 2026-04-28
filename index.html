@@ -2,71 +2,266 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1565c0">
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body { margin:0; font-family:Arial; background:#0d47a1; color:white; }
-.header { padding:25px; text-align:center; background:#1565c0; }
-.balance { font-size:32px; }
+* { box-sizing: border-box; }
 
-.screen { display:none; padding:15px; padding-bottom:90px; }
+body {
+  margin:0;
+  font-family: Arial;
+  background:#0d47a1;
+  color:white;
+}
+
+/* HEADER */
+.header {
+  padding:28px 16px 20px;
+  background:#1565c0;
+  text-align:center;
+}
+
+.balance {
+  font-size:34px;
+  font-weight:bold;
+}
+
+/* SCREENS */
+.screen {
+  display:none;
+  padding:16px;
+  padding-bottom:110px;
+}
 .active { display:block; }
 
-.card { background:white; color:black; padding:12px; border-radius:12px; margin-bottom:10px; }
+/* CARD */
+.card {
+  background:white;
+  color:black;
+  padding:14px;
+  border-radius:16px;
+  margin-bottom:14px;
+}
 
+/* STATS */
+.stats {
+  display:flex;
+  gap:12px;
+  margin-bottom:16px;
+}
+
+.stat {
+  flex:1;
+  background:white;
+  color:black;
+  padding:12px;
+  border-radius:14px;
+  text-align:center;
+}
+
+/* INPUT */
+input, select {
+  width:100%;
+  padding:14px;
+  margin-top:8px;
+  border-radius:12px;
+  border:none;
+  background:#f3f3f3;
+}
+
+/* BUTTON */
+button {
+  width:100%;
+  padding:14px;
+  margin-top:10px;
+  border:none;
+  border-radius:12px;
+  background:#1565c0;
+  color:white;
+  font-weight:bold;
+}
+
+.danger { background:#e53935; }
+
+/* NAVBAR */
 .navbar {
-  position:fixed; bottom:0; width:100%;
-  display:flex; background:white;
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  display:flex;
+  background:white;
+  border-top:1px solid #ddd;
+  height:65px;
 }
+
 .navbar button {
-  flex:1; background:white; color:#1565c0;
+  flex:1;
+  background:white;
+  color:#1565c0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
 }
 
-#loader { display:none; position:fixed; top:0; width:100%; height:100%; background:rgba(0,0,0,0.4); }
+/* FAB */
+.fab {
+  position:fixed;
+  bottom:75px;
+  right:20px;
+  width:60px;
+  height:60px;
+  border-radius:50%;
+  background:#1565c0;
+  color:white;
+  font-size:28px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
 
+/* PROGRESS */
+.bar {
+  background:#eee;
+  height:8px;
+  border-radius:10px;
+  overflow:hidden;
+  margin-top:6px;
+}
+
+/* LOADER */
+#loader {
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.4);
+  display:none;
+  align-items:center;
+  justify-content:center;
+}
+
+.spinner {
+  width:40px;
+  height:40px;
+  border:4px solid #ddd;
+  border-top:4px solid #1565c0;
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+}
+@keyframes spin { 100% { transform:rotate(360deg); } }
+
+/* TOAST */
+#toast {
+  position:fixed;
+  bottom:80px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#323232;
+  color:white;
+  padding:10px 16px;
+  border-radius:20px;
+  display:none;
+}
 </style>
 </head>
 
 <body>
 
 <div class="header">
-  <div>Solde</div>
-  <div class="balance" id="balance">0</div>
+  <div>Solde total</div>
+  <div class="balance" id="balance">0 FCFA</div>
 </div>
 
 <!-- HOME -->
 <div id="home" class="screen active">
+  <div class="stats">
+    <div class="stat">Revenus<br><b id="income"></b></div>
+    <div class="stat">Dépenses<br><b id="expenses"></b></div>
+  </div>
+
   <canvas id="chart"></canvas>
+
+  <div id="homePockets"></div>
+
+  <div class="card">
+    <button onclick="resetKeep()">🔄 Nouveau mois</button>
+    <button class="danger" onclick="resetAll()">⚠️ Reset total</button>
+  </div>
 </div>
 
-<!-- HISTORY -->
+<!-- HISTORIQUE -->
 <div id="history" class="screen">
+  <div class="card"><b>Historique</b></div>
   <div id="historyList"></div>
+</div>
+
+<!-- POCHES -->
+<div id="pockets" class="screen">
+  <div class="card">
+    <b>Créer une poche</b>
+    <input id="pocketName">
+    <input id="pocketAmount" type="number">
+    <button onclick="addPocket()">Créer</button>
+  </div>
+  <div id="pocketsDiv"></div>
 </div>
 
 <!-- ACTIONS -->
 <div id="actions" class="screen">
-  <input id="incomeName" placeholder="Revenu">
-  <input id="incomeAmount" type="number">
-  <button onclick="addIncome()">Ajouter revenu</button>
+  <div class="card">
+    <b>Ajouter revenu</b>
+    <input id="incomeName">
+    <input id="incomeAmount" type="number">
+    <button onclick="addIncome()">Ajouter</button>
+  </div>
 
-  <select id="txPocket"></select>
-  <input id="txAmount" type="number">
-  <button onclick="addTx()">Dépenser</button>
+  <div class="card">
+    <b>Nouvelle dépense</b>
+    <select id="txPocket"></select>
+    <input id="txAmount" type="number">
+    <button onclick="addTx()">Dépenser</button>
+  </div>
 </div>
 
+<!-- FAB -->
+<div class="fab" onclick="showScreen('actions')">+</div>
+
+<!-- NAV -->
 <div class="navbar">
-  <button onclick="show('home')">🏠 Accueil</button>
-  <button onclick="show('history')">📜 Historique</button>
-  <button onclick="show('actions')">💸 Actions</button>
+  <button onclick="showScreen('home')">🏠<span>Accueil</span></button>
+  <button onclick="showScreen('history')">📜<span>Historique</span></button>
+  <button onclick="showScreen('pockets')">📦<span>Poches</span></button>
+  <button onclick="showScreen('actions')">💸<span>Actions</span></button>
 </div>
+
+<!-- LOADER -->
+<div id="loader"><div class="spinner"></div></div>
+
+<!-- TOAST -->
+<div id="toast"></div>
 
 <script>
 const API = "https://script.google.com/macros/s/AKfycbygLSp3sD0Fxdpgp2TmOlMmT28ifxNMTFdMvVP4oGQG-GTBVds3WiH7HZpxswT9t1TI/exec";
 
-let chart;
+function showLoader(){ loader.style.display="flex"; }
+function hideLoader(){ loader.style.display="none"; }
 
-function show(id){
+function showToast(msg){
+  toast.innerText=msg;
+  toast.style.display="block";
+  setTimeout(()=>toast.style.display="none",2000);
+}
+
+let incomes=[], pockets=[], transactions=[];
+
+function showScreen(id){
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
 }
@@ -75,54 +270,98 @@ async function load(){
   const res = await fetch(API+"?action=getData");
   const data = await res.json();
 
-  const income = data.incomes.reduce((s,i)=>s+i.amount,0);
-  const spent = data.pockets.reduce((s,p)=>s+p.spent,0);
+  incomes=data.incomes;
+  pockets=data.pockets;
+  transactions=data.transactions;
 
-  balance.innerText = income - spent;
-
-  renderChart(data.pockets);
-  loadHistory();
+  update();
 }
 
-function renderChart(pockets){
-  const ctx = document.getElementById("chart");
+function update(){
+  const totalIncome = incomes.reduce((s,i)=>s+i.amount,0);
+  const totalSpent = pockets.reduce((s,p)=>s+p.spent,0);
 
-  const labels = pockets.map(p=>p.name);
-  const values = pockets.map(p=>p.spent);
+  balance.innerText = (totalIncome-totalSpent)+" FCFA";
+  income.innerText = totalIncome;
+  expenses.innerText = totalSpent;
 
-  if(chart) chart.destroy();
-
-  chart = new Chart(ctx, {
-    type:'doughnut',
-    data:{ labels, datasets:[{ data:values }] }
+  // chart
+  if(window.chart) window.chart.destroy();
+  chart = new Chart(document.getElementById("chart"), {
+    type:"doughnut",
+    data:{
+      labels:pockets.map(p=>p.name),
+      datasets:[{ data:pockets.map(p=>p.spent) }]
+    },
+    options:{ plugins:{ legend:{display:false} } }
   });
 
-  // 🔔 NOTIFICATION
+  // pockets
+  txPocket.innerHTML="";
+  pocketsDiv.innerHTML="";
+  homePockets.innerHTML="";
+
   pockets.forEach(p=>{
-    if(p.spent > p.planned){
-      alert("⚠️ Dépassement: " + p.name);
-    }
+    const opt=document.createElement("option");
+    opt.value=p.name;
+    opt.textContent=p.name;
+    txPocket.appendChild(opt);
+
+    const percent=Math.min((p.spent/p.planned)*100,100);
+
+    const html=`
+      <div class="card">
+        <b>${p.name}</b><br>
+        Reste: ${p.planned-p.spent} FCFA
+        <div class="bar">
+          <div style="width:${percent}%;background:#4caf50;height:100%"></div>
+        </div>
+      </div>`;
+    
+    pocketsDiv.innerHTML+=html;
+    homePockets.innerHTML+=html;
   });
-}
 
-async function loadHistory(){
-  const res = await fetch(API+"?action=history");
-  const data = await res.json();
-
+  // history
   historyList.innerHTML="";
-  data.forEach(tx=>{
-    historyList.innerHTML += `<div class="card">${tx.pocket} - ${tx.amount}</div>`;
+  transactions.slice().reverse().forEach(t=>{
+    historyList.innerHTML+=`
+      <div class="card">${t.name} - ${t.amount} FCFA</div>`;
   });
 }
 
 async function addIncome(){
+  showLoader();
   await fetch(`${API}?action=add&type=income&name=${incomeName.value}&amount=${incomeAmount.value}`);
-  load();
+  hideLoader(); showToast("Revenu ajouté"); load();
+}
+
+async function addPocket(){
+  showLoader();
+  await fetch(`${API}?action=add&type=pocket&name=${pocketName.value}&amount=${pocketAmount.value}`);
+  hideLoader(); showToast("Poche créée"); load();
 }
 
 async function addTx(){
+  showLoader();
   await fetch(`${API}?action=tx&pocket=${txPocket.value}&amount=${txAmount.value}`);
-  load();
+  hideLoader(); showToast("Dépense ajoutée"); load();
+}
+
+async function resetKeep(){
+  if(confirm("Nouveau mois ?")){
+    showLoader();
+    await fetch(`${API}?action=reset&mode=keepPockets`);
+    hideLoader(); showToast("Mois réinitialisé"); load();
+  }
+}
+
+async function resetAll(){
+  if(confirm("Tout supprimer ?")){
+    showLoader();
+    await fetch(`${API}?action=reset&mode=all`);
+    hideLoader(); showToast("Tout supprimé"); load();
+  }
 }
 
 load();
