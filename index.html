@@ -6,65 +6,211 @@
 <meta name="theme-color" content="#1565c0">
 
 <style>
-body { margin:0; font-family:Arial; background:#0d47a1; color:white; }
-.container { max-width:420px; margin:auto; padding:15px; }
-.card { background:white; color:black; padding:15px; border-radius:15px; margin-bottom:10px; }
-button, input, select { width:100%; padding:12px; margin-top:8px; border-radius:10px; border:none; }
-button { background:#1565c0; color:white; }
+* { box-sizing: border-box; }
+
+body {
+  margin:0;
+  font-family: Arial;
+  background:#0d47a1;
+  color:white;
+}
+
+/* HEADER */
+.header {
+  padding:20px 16px;
+  background:#1565c0;
+}
+
+.balance {
+  font-size:28px;
+  font-weight:bold;
+}
+
+/* SCREENS */
+.screen {
+  display:none;
+  padding:12px;
+  padding-bottom:80px;
+}
+
+.active {
+  display:block;
+}
+
+/* CARD */
+.card {
+  background:white;
+  color:black;
+  padding:14px;
+  border-radius:16px;
+  margin-bottom:12px;
+}
+
+/* INPUT */
+input, select {
+  width:100%;
+  padding:14px;
+  margin-top:8px;
+  border-radius:12px;
+  border:none;
+  background:#f3f3f3;
+}
+
+/* BUTTON */
+button {
+  width:100%;
+  padding:14px;
+  margin-top:10px;
+  border:none;
+  border-radius:12px;
+  background:#1565c0;
+  color:white;
+  font-weight:bold;
+}
+
+/* NAVBAR */
+.navbar {
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  display:flex;
+  background:white;
+  border-top:1px solid #ddd;
+  height:60px;
+}
+
+.navbar button {
+  flex:1;
+  background:white;
+  color:#1565c0;
+  font-size:18px;
+}
+
+/* PROGRESS */
+.bar {
+  background:#eee;
+  height:8px;
+  border-radius:10px;
+  overflow:hidden;
+  margin-top:6px;
+}
+
+small {
+  color:#666;
+}
 </style>
 </head>
 
 <body>
 
-<div class="container">
-  <h2>Solde: <span id="balance">0</span> FCFA</h2>
+<div class="header">
+  <div>Solde</div>
+  <div class="balance" id="balance">0 FCFA</div>
+</div>
 
+<!-- ACCUEIL -->
+<div id="home" class="screen active">
   <div class="card">
-    <input id="incomeName" placeholder="Revenu">
-    <input id="incomeAmount" type="number">
-    <button onclick="addIncome()">Ajouter revenu</button>
+    <b>Résumé</b><br>
+    Revenus: <span id="income"></span><br>
+    Dépenses: <span id="expenses"></span>
   </div>
+</div>
 
+<!-- POCHES -->
+<div id="pockets" class="screen">
   <div class="card">
-    <input id="pocketName" placeholder="Poche">
+    <b>Créer une poche</b>
+    <input id="pocketName">
     <input id="pocketAmount" type="number">
-    <button onclick="addPocket()">Créer poche</button>
+    <button onclick="addPocket()">Créer</button>
   </div>
 
+  <div id="pocketsDiv"></div>
+</div>
+
+<!-- DEPENSES -->
+<div id="expensesScreen" class="screen">
   <div class="card">
+    <b>Nouvelle dépense</b>
     <select id="txPocket"></select>
     <input id="txAmount" type="number">
     <button onclick="addTx()">Dépenser</button>
   </div>
 
-  <div id="pockets"></div>
+  <div class="card">
+    <b>Ajouter revenu</b>
+    <input id="incomeName">
+    <input id="incomeAmount" type="number">
+    <button onclick="addIncome()">Ajouter</button>
+  </div>
+</div>
+
+<!-- NAVIGATION -->
+<div class="navbar">
+  <button onclick="showScreen('home')">🏠</button>
+  <button onclick="showScreen('pockets')">📦</button>
+  <button onclick="showScreen('expensesScreen')">💸</button>
 </div>
 
 <script>
 const API = "https://script.google.com/macros/s/AKfycbygLSp3sD0Fxdpgp2TmOlMmT28ifxNMTFdMvVP4oGQG-GTBVds3WiH7HZpxswT9t1TI/exec";
 
+let incomes = [];
+let pockets = [];
+
+function showScreen(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
 async function load(){
   const res = await fetch(API + "?action=getData");
   const data = await res.json();
 
-  const income = data.incomes.reduce((s,i)=>s+i.amount,0);
-  const spent = data.pockets.reduce((s,p)=>s+p.spent,0);
+  incomes = data.incomes;
+  pockets = data.pockets;
 
-  balance.innerText = income - spent;
+  update();
+}
+
+function update(){
+  const totalIncome = incomes.reduce((s,i)=>s+i.amount,0);
+  const totalSpent = pockets.reduce((s,p)=>s+p.spent,0);
+
+  balance.innerText = (totalIncome - totalSpent) + " FCFA";
+  income.innerText = totalIncome;
+  expenses.innerText = totalSpent;
 
   txPocket.innerHTML="";
-  pockets.innerHTML="";
+  pocketsDiv.innerHTML="";
 
-  data.pockets.forEach(p=>{
-    const opt = document.createElement("option");
+  pockets.forEach(p=>{
+    const opt=document.createElement("option");
     opt.value=p.name;
     opt.textContent=p.name;
     txPocket.appendChild(opt);
 
+    const percent = Math.min((p.spent/p.planned)*100,100);
+
+    let color="#4caf50";
+    if(percent>70) color="#ff9800";
+    if(percent>=100) color="#e53935";
+
     const div=document.createElement("div");
     div.className="card";
-    div.innerHTML=`${p.name} → reste: ${p.planned - p.spent}`;
-    pockets.appendChild(div);
+
+    div.innerHTML=`
+      <b>${p.name}</b><br>
+      Reste: ${p.planned - p.spent} FCFA
+      <div class="bar">
+        <div style="width:${percent}%; background:${color}; height:100%;"></div>
+      </div>
+      <small>${Math.round(percent)}%</small>
+    `;
+
+    pocketsDiv.appendChild(div);
   });
 }
 
