@@ -13,7 +13,22 @@
 
     /* HEADER */
     .header { position: relative; padding:30px 16px 20px; background:#1565c0; text-align:center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
-    .header-settings { position: absolute; top: 25px; right: 20px; font-size: 24px; cursor: pointer; }
+    .header-settings { 
+  position: absolute; 
+  top: 15px; 
+  right: 15px; 
+  font-size: 22px; 
+  cursor: pointer;
+  /* On agrandit la zone cliquable pour le doigt */
+  padding: 10px; 
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15); /* Léger fond transparent */
+}
     .balance { font-size:36px; font-weight:bold; margin-top: 5px; }
 
     /* SCREENS */
@@ -262,26 +277,37 @@
   function updateGraph() {
     const canvas = document.getElementById('expenseChart');
     if(!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (myChart) myChart.destroy();
     
     const activePockets = pockets.filter(p => p.spent > 0);
     if(activePockets.length === 0) {
       document.getElementById('chartContainer').style.display = "none";
       return;
     }
+    
     document.getElementById('chartContainer').style.display = "block";
+
+    // LE FIX EST ICI : On refuse de dessiner le graphique si l'écran d'accueil est caché
+    if(!document.getElementById('home').classList.contains('active')) return;
+
+    const ctx = canvas.getContext('2d');
+    if (myChart) myChart.destroy(); // On détruit l'ancien avant d'en créer un nouveau
+    
     myChart = new Chart(ctx, {
       type: 'doughnut',
       data: {
         labels: activePockets.map(p => p.name),
         datasets: [{
           data: activePockets.map(p => p.spent),
-          backgroundColor: ['#e53935', '#1e88e5', '#43a047', '#fb8c00', '#8e24aa', '#00acc1', '#fbc02d'],
+          // J'ai ajouté plus de couleurs au cas où tu aurais beaucoup de poches
+          backgroundColor: ['#e53935', '#1e88e5', '#43a047', '#fb8c00', '#8e24aa', '#00acc1', '#fbc02d', '#d81b60', '#3949ab', '#00897b'],
           borderWidth: 2
         }]
       },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } } }
+      options: { 
+        responsive: true, 
+        maintainAspectRatio: false, 
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } } 
+      }
     });
   }
 
@@ -316,7 +342,10 @@
       pDiv.innerHTML += html; hP.innerHTML += html;
     });
 
-    updateGraph();
+    // On met à jour le graphique uniquement si on est sur l'écran d'accueil
+    if(document.getElementById('home').classList.contains('active')) {
+      updateGraph();
+    }
 
     // Dettes
     let toMe = 0, iOwe = 0;
