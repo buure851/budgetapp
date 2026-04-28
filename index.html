@@ -5,71 +5,191 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1565c0">
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <style>
-*{box-sizing:border-box}
-body{margin:0;font-family:Arial;background:#0d47a1;color:white}
+* { box-sizing: border-box; }
 
-.header{padding:28px 16px;text-align:center;background:#1565c0}
-.balance{font-size:32px;font-weight:bold}
+body {
+  margin:0;
+  font-family: Arial;
+  background:#0d47a1;
+  color:white;
+}
 
-.screen{display:none;padding:16px;padding-bottom:110px}
-.active{display:block}
+/* HEADER */
+.header {
+  padding:28px 16px 20px;
+  background:#1565c0;
+  text-align:center;
+}
 
-.card{background:white;color:black;padding:14px;border-radius:16px;margin-bottom:14px}
+.balance {
+  font-size:34px;
+  font-weight:bold;
+}
 
-.stats{display:flex;gap:10px;margin-bottom:16px}
-.stat{flex:1;background:white;color:black;padding:10px;border-radius:12px;text-align:center}
+/* SCREENS */
+.screen {
+  display:none;
+  padding:16px;
+  padding-bottom:110px;
+}
 
-input,select{width:100%;padding:12px;margin-top:8px;border-radius:10px;border:none;background:#f3f3f3}
+.active { display:block; }
 
-button{width:100%;padding:12px;margin-top:10px;border:none;border-radius:10px;background:#1565c0;color:white}
+/* CARD */
+.card {
+  background:white;
+  color:black;
+  padding:14px;
+  border-radius:16px;
+  margin-bottom:14px;
+}
 
-.danger{background:#e53935}
+/* STATS */
+.stats {
+  display:flex;
+  gap:12px;
+  margin-bottom:16px;
+}
 
-.navbar{position:fixed;bottom:0;left:0;right:0;display:flex;background:white;height:65px}
-.navbar button{flex:1;background:white;color:#1565c0;font-size:12px}
+.stat {
+  flex:1;
+  background:white;
+  color:black;
+  padding:12px;
+  border-radius:14px;
+  text-align:center;
+}
 
-.fab{position:fixed;bottom:75px;right:20px;width:60px;height:60px;border-radius:50%;background:#1565c0;color:white;font-size:28px;display:flex;align-items:center;justify-content:center}
+/* INPUT */
+input, select {
+  width:100%;
+  padding:14px;
+  margin-top:8px;
+  border-radius:12px;
+  border:none;
+  background:#f3f3f3;
+}
 
-.bar{background:#eee;height:8px;border-radius:10px;overflow:hidden;margin-top:6px}
+/* BUTTON */
+button {
+  width:100%;
+  padding:14px;
+  margin-top:10px;
+  border:none;
+  border-radius:12px;
+  background:#1565c0;
+  color:white;
+  font-weight:bold;
+}
 
-#loader{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);display:none;align-items:center;justify-content:center}
-.spinner{width:40px;height:40px;border:4px solid #ddd;border-top:4px solid #1565c0;border-radius:50%;animation:spin 1s linear infinite}
-@keyframes spin{100%{transform:rotate(360deg)}}
+.danger {
+  background:#e53935;
+}
 
-#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#333;color:white;padding:10px 16px;border-radius:20px;display:none}
+/* NAVBAR */
+.navbar {
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  display:flex;
+  background:white;
+  border-top:1px solid #ddd;
+  height:65px;
+}
+
+.navbar button {
+  flex:1;
+  background:white;
+  color:#1565c0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
+}
+
+/* FAB */
+.fab {
+  position:fixed;
+  bottom:75px;
+  right:20px;
+  width:60px;
+  height:60px;
+  border-radius:50%;
+  background:#1565c0;
+  color:white;
+  font-size:28px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* PROGRESS */
+.bar {
+  background:#eee;
+  height:8px;
+  border-radius:10px;
+  overflow:hidden;
+  margin-top:6px;
+}
+
+/* LOADER */
+#loader {
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.4);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index: 999;
+}
+
+.spinner {
+  width:40px;
+  height:40px;
+  border:4px solid #ddd;
+  border-top:4px solid #1565c0;
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+}
+
+@keyframes spin {
+  100% { transform:rotate(360deg); }
+}
 </style>
 </head>
 
 <body>
 
 <div class="header">
-  <div>Solde total</div>
+  <div>Solde total disponible</div>
   <div class="balance" id="balance">0 FCFA</div>
 </div>
 
 <div id="home" class="screen active">
   <div class="stats">
     <div class="stat">Revenus<br><b id="income"></b></div>
-    <div class="stat">Dépenses<br><b id="expenses"></b></div>
+    <div class="stat">Dépensé<br><b id="expenses"></b></div>
   </div>
 
-  <canvas id="chart"></canvas>
-
   <div id="homePockets"></div>
-</div>
 
-<div id="history" class="screen">
-  <div class="card"><b>Historique</b></div>
-  <div id="historyList"></div>
+  <div class="card">
+    <button onclick="resetKeep()">🔄 Nouveau mois</button>
+    <button class="danger" onclick="resetAll()">⚠️ Reset total</button>
+  </div>
 </div>
 
 <div id="pockets" class="screen">
   <div class="card">
-    <input id="pocketName">
-    <input id="pocketAmount" type="number">
+    <b>Créer une poche</b>
+    <input id="pocketName" placeholder="Nom (ex: Loyer)">
+    <input id="pocketAmount" type="number" placeholder="Montant prévu">
     <button onclick="addPocket()">Créer</button>
   </div>
   <div id="pocketsDiv"></div>
@@ -77,14 +197,16 @@ button{width:100%;padding:12px;margin-top:10px;border:none;border-radius:10px;ba
 
 <div id="actions" class="screen">
   <div class="card">
-    <input id="incomeName">
-    <input id="incomeAmount" type="number">
-    <button onclick="addIncome()">Ajouter revenu</button>
+    <b>Ajouter un revenu</b>
+    <input id="incomeName" placeholder="Source (ex: Salaire)">
+    <input id="incomeAmount" type="number" placeholder="Montant">
+    <button onclick="addIncome()">Ajouter</button>
   </div>
 
   <div class="card">
+    <b>Nouvelle dépense</b>
     <select id="txPocket"></select>
-    <input id="txAmount" type="number">
+    <input id="txAmount" type="number" placeholder="Montant dépensé">
     <button onclick="addTx()">Dépenser</button>
   </div>
 </div>
@@ -92,49 +214,42 @@ button{width:100%;padding:12px;margin-top:10px;border:none;border-radius:10px;ba
 <div class="fab" onclick="showScreen('actions')">+</div>
 
 <div class="navbar">
-  <button onclick="showScreen('home')">🏠 Accueil</button>
-  <button onclick="showScreen('history')">📜 Historique</button>
-  <button onclick="showScreen('pockets')">📦 Poches</button>
-  <button onclick="showScreen('actions')">💸 Actions</button>
+  <button onclick="showScreen('home')">🏠<span>Accueil</span></button>
+  <button onclick="showScreen('pockets')">📦<span>Poches</span></button>
+  <button onclick="showScreen('actions')">💸<span>Actions</span></button>
 </div>
 
 <div id="loader"><div class="spinner"></div></div>
-<div id="toast"></div>
 
 <script>
 const API = "https://script.google.com/macros/s/AKfycbygLSp3sD0Fxdpgp2TmOlMmT28ifxNMTFdMvVP4oGQG-GTBVds3WiH7HZpxswT9t1TI/exec";
 
-let incomes=[], pockets=[], transactions=[], chartInstance=null;
+function showLoader(){ document.getElementById('loader').style.display="flex"; }
+function hideLoader(){ document.getElementById('loader').style.display="none"; }
 
-function el(id){ return document.getElementById(id); }
-
-function showLoader(){ el("loader").style.display="flex"; }
-function hideLoader(){ el("loader").style.display="none"; }
-
-function showToast(msg){
-  const t = el("toast");
-  t.innerText = msg;
-  t.style.display="block";
-  setTimeout(()=>t.style.display="none",2000);
-}
+let incomes = [];
+let pockets = [];
 
 function showScreen(id){
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-  el(id).classList.add("active");
+  document.getElementById(id).classList.add("active");
+}
+
+// Fonction utilitaire pour formater les montants en FCFA
+function formatMoney(amount) {
+  return new Intl.NumberFormat('fr-FR').format(amount);
 }
 
 async function load(){
-  try{
-    const res = await fetch(API+"?action=getData");
+  try {
+    const res = await fetch(API+"?action=getData", { method: "GET", redirect: "follow" });
     const data = await res.json();
-
-    incomes = data.incomes || [];
-    pockets = data.pockets || [];
-    transactions = data.transactions || [];
-
+    incomes = data.incomes;
+    pockets = data.pockets;
     update();
-  }catch(e){
-    showToast("Erreur chargement");
+  } catch(e) {
+    console.error("Erreur de chargement", e);
+    alert("Impossible de charger les données. Vérifiez votre connexion.");
   }
 }
 
@@ -142,71 +257,105 @@ function update(){
   const totalIncome = incomes.reduce((s,i)=>s+i.amount,0);
   const totalSpent = pockets.reduce((s,p)=>s+p.spent,0);
 
-  el("balance").innerText = (totalIncome-totalSpent)+" FCFA";
-  el("income").innerText = totalIncome;
-  el("expenses").innerText = totalSpent;
+  document.getElementById('balance').innerText = formatMoney(totalIncome - totalSpent) + " FCFA";
+  document.getElementById('income').innerText = formatMoney(totalIncome) + " FCFA";
+  document.getElementById('expenses').innerText = formatMoney(totalSpent) + " FCFA";
 
-  // Chart FIX
-  if(chartInstance) chartInstance.destroy();
+  const txPocket = document.getElementById('txPocket');
+  const pocketsDiv = document.getElementById('pocketsDiv');
+  const homePockets = document.getElementById('homePockets');
 
-  chartInstance = new Chart(el("chart"), {
-    type:"doughnut",
-    data:{
-      labels:pockets.map(p=>p.name),
-      datasets:[{ data:pockets.map(p=>p.spent) }]
-    },
-    options:{ plugins:{ legend:{display:false} } }
-  });
-
-  // pockets
-  el("txPocket").innerHTML="";
-  el("pocketsDiv").innerHTML="";
-  el("homePockets").innerHTML="";
+  txPocket.innerHTML="";
+  pocketsDiv.innerHTML="";
+  homePockets.innerHTML="";
 
   pockets.forEach(p=>{
-    const opt=document.createElement("option");
-    opt.value=p.name;
-    opt.textContent=p.name;
-    el("txPocket").appendChild(opt);
+    const opt = document.createElement("option");
+    opt.value = p.name;
+    opt.textContent = p.name;
+    txPocket.appendChild(opt);
 
-    const percent = p.planned ? Math.min((p.spent/p.planned)*100,100) : 0;
+    const percent = Math.min((p.spent/p.planned)*100, 100);
+    
+    // Changement de couleur dynamique : Vert > Orange > Rouge
+    let color = "#4caf50";
+    if(percent > 75) color = "#ff9800";
+    if(percent >= 100) color = "#f44336";
 
-    const html = `
+    const html=`
       <div class="card">
         <b>${p.name}</b><br>
-        Reste: ${p.planned - p.spent} FCFA
+        Reste: ${formatMoney(p.planned - p.spent)} / ${formatMoney(p.planned)} FCFA
         <div class="bar">
-          <div style="width:${percent}%;background:#4caf50;height:100%"></div>
+          <div style="width:${percent}%; background:${color}; height:100%"></div>
         </div>
       </div>`;
-
-    el("pocketsDiv").innerHTML += html;
-    el("homePockets").innerHTML += html;
-  });
-
-  // history
-  el("historyList").innerHTML="";
-  transactions.slice().reverse().forEach(t=>{
-    el("historyList").innerHTML += `<div class="card">${t.name} - ${t.amount} FCFA</div>`;
+    
+    pocketsDiv.innerHTML += html;
+    homePockets.innerHTML += html;
   });
 }
 
 async function addIncome(){
+  const name = document.getElementById('incomeName').value.trim();
+  const amount = document.getElementById('incomeAmount').value;
+  
+  if(!name || !amount || isNaN(amount) || amount <= 0) return alert("Veuillez saisir des valeurs valides.");
+
   showLoader();
-  await fetch(`${API}?action=add&type=income&name=${incomeName.value}&amount=${incomeAmount.value}`);
-  hideLoader(); showToast("Revenu ajouté"); load();
+  await fetch(`${API}?action=add&type=income&name=${encodeURIComponent(name)}&amount=${amount}`, { method: "GET", redirect: "follow" });
+  hideLoader();
+  
+  document.getElementById('incomeName').value = "";
+  document.getElementById('incomeAmount').value = "";
+  load();
 }
 
 async function addPocket(){
+  const name = document.getElementById('pocketName').value.trim();
+  const amount = document.getElementById('pocketAmount').value;
+
+  if(!name || !amount || isNaN(amount) || amount <= 0) return alert("Veuillez saisir des valeurs valides.");
+
   showLoader();
-  await fetch(`${API}?action=add&type=pocket&name=${pocketName.value}&amount=${pocketAmount.value}`);
-  hideLoader(); showToast("Poche créée"); load();
+  await fetch(`${API}?action=add&type=pocket&name=${encodeURIComponent(name)}&amount=${amount}`, { method: "GET", redirect: "follow" });
+  hideLoader();
+  
+  document.getElementById('pocketName').value = "";
+  document.getElementById('pocketAmount').value = "";
+  load();
 }
 
 async function addTx(){
+  const pocket = document.getElementById('txPocket').value;
+  const amount = document.getElementById('txAmount').value;
+
+  if(!pocket || !amount || isNaN(amount) || amount <= 0) return alert("Veuillez sélectionner une poche et un montant valide.");
+
   showLoader();
-  await fetch(`${API}?action=tx&pocket=${txPocket.value}&amount=${txAmount.value}`);
-  hideLoader(); showToast("Dépense ajoutée"); load();
+  await fetch(`${API}?action=tx&pocket=${encodeURIComponent(pocket)}&amount=${amount}`, { method: "GET", redirect: "follow" });
+  hideLoader();
+  
+  document.getElementById('txAmount').value = "";
+  load();
+}
+
+async function resetKeep(){
+  if(confirm("Démarrer un nouveau mois ? Tes poches seront conservées mais vidées.")){
+    showLoader();
+    await fetch(`${API}?action=reset&mode=keepPockets`, { method: "GET", redirect: "follow" });
+    hideLoader();
+    load();
+  }
+}
+
+async function resetAll(){
+  if(confirm("Tout supprimer définitivement ?")){
+    showLoader();
+    await fetch(`${API}?action=reset&mode=all`, { method: "GET", redirect: "follow" });
+    hideLoader();
+    load();
+  }
 }
 
 load();
