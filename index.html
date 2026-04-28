@@ -30,18 +30,19 @@ button { width:100%; padding:14px; margin-top:10px; border:none; border-radius:1
 
 /* NAVBAR & FAB */
 .navbar { position:fixed; bottom:0; left:0; right:0; display:flex; background:white; border-top:1px solid #ddd; height:65px; z-index: 100;}
-.navbar button { flex:1; background:white; color:#1565c0; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:12px; margin-top: 0; border-radius: 0;}
+.navbar button { flex:1; background:white; color:#1565c0; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:11px; margin-top: 0; border-radius: 0;}
 .fab { position:fixed; bottom:75px; right:20px; width:60px; height:60px; border-radius:50%; background:#1565c0; color:white; font-size:28px; display:flex; align-items:center; justify-content:center; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.3);}
 
 /* PROGRESS */
 .bar { background:#eee; height:8px; border-radius:10px; overflow:hidden; margin-top:6px; }
 
 /* HISTORY LIST */
-.history-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; font-size: 14px;}
+.history-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; font-size: 14px;}
 .history-item:last-child { border-bottom: none; }
-.history-date { color: #888; font-size: 12px; }
-.text-red { color: #e53935; font-weight: bold;}
-.text-green { color: #4caf50; font-weight: bold;}
+.history-date { color: #888; font-size: 12px; display: block; margin-top: 2px;}
+.history-comment { color: #666; font-size: 13px; font-style: italic; display: block; margin-top: 4px; background: #f9f9f9; padding: 4px 8px; border-radius: 6px;}
+.text-red { color: #e53935; font-weight: bold; text-align: right;}
+.text-green { color: #4caf50; font-weight: bold; text-align: right;}
 
 /* LOADER */
 #loader { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; z-index: 999; }
@@ -77,10 +78,6 @@ button { width:100%; padding:14px; margin-top:10px; border:none; border-radius:1
     <div class="stat">Dépensé<br><b id="expenses"></b></div>
   </div>
   <div id="homePockets"></div>
-  <div class="card">
-    <button onclick="resetKeep()">🔄 Nouveau mois</button>
-    <button class="danger" onclick="resetAll()">⚠️ Reset total</button>
-  </div>
 </div>
 
 <div id="pockets" class="screen">
@@ -88,6 +85,7 @@ button { width:100%; padding:14px; margin-top:10px; border:none; border-radius:1
     <b>Créer une poche</b>
     <input id="pocketName" placeholder="Nom (ex: Loyer)">
     <input id="pocketAmount" type="number" placeholder="Montant prévu">
+    <input id="pocketComment" placeholder="Note ou commentaire (optionnel)">
     <button onclick="addPocket()">Créer</button>
   </div>
   <div id="pocketsDiv"></div>
@@ -98,12 +96,14 @@ button { width:100%; padding:14px; margin-top:10px; border:none; border-radius:1
     <b>Ajouter un revenu</b>
     <input id="incomeName" placeholder="Source (ex: Salaire)">
     <input id="incomeAmount" type="number" placeholder="Montant">
+    <input id="incomeComment" placeholder="Note (ex: Mois de Mars)">
     <button onclick="addIncome()">Ajouter</button>
   </div>
   <div class="card">
     <b>Nouvelle dépense</b>
     <select id="txPocket"></select>
     <input id="txAmount" type="number" placeholder="Montant dépensé">
+    <input id="txComment" placeholder="Note (ex: Ticket Auchan)">
     <button onclick="addTx()">Dépenser</button>
   </div>
 </div>
@@ -115,12 +115,27 @@ button { width:100%; padding:14px; margin-top:10px; border:none; border-radius:1
   </div>
 </div>
 
+<div id="settings" class="screen">
+  <div class="card">
+    <b>Sécurité : Modifier le code PIN</b>
+    <input id="oldPin" type="password" placeholder="Ancien code PIN" maxlength="4" inputmode="numeric">
+    <input id="newPin" type="password" placeholder="Nouveau code PIN" maxlength="4" inputmode="numeric">
+    <button onclick="changePin()">Enregistrer le nouveau code</button>
+  </div>
+  <div class="card">
+    <b>Gestion des données</b>
+    <button onclick="resetKeep()" style="background: #ff9800;">🔄 Nouveau mois (Garder les poches)</button>
+    <button class="danger" onclick="resetAll()">⚠️ Tout réinitialiser</button>
+  </div>
+</div>
+
 <div class="fab" onclick="showScreen('actions')">+</div>
 
 <div class="navbar">
   <button onclick="showScreen('home')">🏠<span>Accueil</span></button>
   <button onclick="showScreen('pockets')">📦<span>Poches</span></button>
   <button onclick="showScreen('history')">📜<span>Historique</span></button>
+  <button onclick="showScreen('settings')">⚙️<span>Paramètres</span></button>
 </div>
 
 <div id="loader"><div class="spinner"></div></div>
@@ -173,11 +188,25 @@ function verifyPin() {
     }
   }
 }
+
+function changePin() {
+  const oldP = document.getElementById('oldPin').value;
+  const newP = document.getElementById('newPin').value;
+  const savedPin = localStorage.getItem('budgetPin');
+  
+  if(oldP !== savedPin) return alert("L'ancien code PIN est incorrect.");
+  if(newP.length < 4) return alert("Le nouveau code doit faire 4 chiffres.");
+  
+  localStorage.setItem('budgetPin', newP);
+  alert("Code PIN modifié avec succès !");
+  document.getElementById('oldPin').value = "";
+  document.getElementById('newPin').value = "";
+}
+
 initApp();
 // -----------------------------
 
 async function load(){
-  // 1. CHARGEMENT HORS-LIGNE (CACHE)
   const cachedData = localStorage.getItem("budgetCache");
   if(cachedData) {
     const parsed = JSON.parse(cachedData);
@@ -189,14 +218,11 @@ async function load(){
     showLoader();
   }
 
-  // 2. FETCH EN ARRIERE-PLAN
   try {
     const res = await fetch(API+"?action=getData", { method: "GET", redirect: "follow" });
     const data = await res.json();
     
-    // Sauvegarde en cache pour la prochaine ouverture
     localStorage.setItem("budgetCache", JSON.stringify(data));
-    
     incomes = data.incomes;
     pockets = data.pockets;
     historyData = data.history;
@@ -223,7 +249,6 @@ function update(){
 
   txPocket.innerHTML=""; pocketsDiv.innerHTML=""; homePockets.innerHTML=""; historyList.innerHTML="";
 
-  // Update des Poches
   pockets.forEach(p=>{
     const opt = document.createElement("option");
     opt.value = p.name;
@@ -247,7 +272,6 @@ function update(){
     homePockets.innerHTML += html;
   });
 
-  // Update de l'Historique
   if(historyData.length === 0) {
     historyList.innerHTML = "<p style='color:#888; text-align:center;'>Aucune transaction.</p>";
   } else {
@@ -255,12 +279,14 @@ function update(){
       const isDepense = h.type === "Dépense";
       const colorClass = isDepense ? "text-red" : "text-green";
       const sign = isDepense ? "-" : "+";
+      const commentHtml = h.comment ? `<span class="history-comment">${h.comment}</span>` : "";
       
       historyList.innerHTML += `
         <div class="history-item">
-          <div>
-            <b>${h.name}</b><br>
+          <div style="flex: 1;">
+            <b>${h.name}</b>
             <span class="history-date">${h.date || 'Récemment'}</span>
+            ${commentHtml}
           </div>
           <div class="${colorClass}">${sign}${formatMoney(h.amount)}</div>
         </div>
@@ -272,30 +298,39 @@ function update(){
 async function addIncome(){
   const name = document.getElementById('incomeName').value.trim();
   const amount = document.getElementById('incomeAmount').value;
+  const comment = document.getElementById('incomeComment').value.trim();
+  
   if(!name || !amount || isNaN(amount) || amount <= 0) return alert("Données invalides.");
   showLoader();
-  await fetch(`${API}?action=add&type=income&name=${encodeURIComponent(name)}&amount=${amount}`, { method: "GET", redirect: "follow" });
-  document.getElementById('incomeName').value = ""; document.getElementById('incomeAmount').value = "";
+  await fetch(`${API}?action=add&type=income&name=${encodeURIComponent(name)}&amount=${amount}&comment=${encodeURIComponent(comment)}`, { method: "GET", redirect: "follow" });
+  
+  document.getElementById('incomeName').value = ""; document.getElementById('incomeAmount').value = ""; document.getElementById('incomeComment').value = "";
   load();
 }
 
 async function addPocket(){
   const name = document.getElementById('pocketName').value.trim();
   const amount = document.getElementById('pocketAmount').value;
+  const comment = document.getElementById('pocketComment').value.trim();
+
   if(!name || !amount || isNaN(amount) || amount <= 0) return alert("Données invalides.");
   showLoader();
-  await fetch(`${API}?action=add&type=pocket&name=${encodeURIComponent(name)}&amount=${amount}`, { method: "GET", redirect: "follow" });
-  document.getElementById('pocketName').value = ""; document.getElementById('pocketAmount').value = "";
+  await fetch(`${API}?action=add&type=pocket&name=${encodeURIComponent(name)}&amount=${amount}&comment=${encodeURIComponent(comment)}`, { method: "GET", redirect: "follow" });
+  
+  document.getElementById('pocketName').value = ""; document.getElementById('pocketAmount').value = ""; document.getElementById('pocketComment').value = "";
   load();
 }
 
 async function addTx(){
   const pocket = document.getElementById('txPocket').value;
   const amount = document.getElementById('txAmount').value;
+  const comment = document.getElementById('txComment').value.trim();
+
   if(!pocket || !amount || isNaN(amount) || amount <= 0) return alert("Données invalides.");
   showLoader();
-  await fetch(`${API}?action=tx&pocket=${encodeURIComponent(pocket)}&amount=${amount}`, { method: "GET", redirect: "follow" });
-  document.getElementById('txAmount').value = "";
+  await fetch(`${API}?action=tx&pocket=${encodeURIComponent(pocket)}&amount=${amount}&comment=${encodeURIComponent(comment)}`, { method: "GET", redirect: "follow" });
+  
+  document.getElementById('txAmount').value = ""; document.getElementById('txComment').value = "";
   load();
 }
 
@@ -311,7 +346,7 @@ async function resetAll(){
   if(confirm("Tout supprimer définitivement ?")){
     showLoader();
     await fetch(`${API}?action=reset&mode=all`, { method: "GET", redirect: "follow" });
-    localStorage.removeItem("budgetCache"); // Vide le cache aussi
+    localStorage.removeItem("budgetCache");
     load();
   }
 }
