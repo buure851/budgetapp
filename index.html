@@ -85,7 +85,6 @@ button {
 
 .danger {
   background:#e53935;
-  margin-top:8px;
 }
 
 /* NAVBAR */
@@ -97,20 +96,24 @@ button {
   display:flex;
   background:white;
   border-top:1px solid #ddd;
-  height:60px;
+  height:65px;
 }
 
 .navbar button {
   flex:1;
   background:white;
   color:#1565c0;
-  font-size:18px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
 }
 
-/* FLOAT BUTTON */
+/* FAB */
 .fab {
   position:fixed;
-  bottom:70px;
+  bottom:75px;
   right:20px;
   width:60px;
   height:60px;
@@ -132,7 +135,31 @@ button {
   margin-top:6px;
 }
 
-small { color:#666; }
+/* LOADER */
+#loader {
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.4);
+  display:none;
+  align-items:center;
+  justify-content:center;
+}
+
+.spinner {
+  width:40px;
+  height:40px;
+  border:4px solid #ddd;
+  border-top:4px solid #1565c0;
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+}
+
+@keyframes spin {
+  100% { transform:rotate(360deg); }
+}
 </style>
 </head>
 
@@ -145,24 +172,17 @@ small { color:#666; }
 
 <!-- HOME -->
 <div id="home" class="screen active">
-
   <div class="stats">
-    <div class="stat">
-      Revenus<br><b id="income"></b>
-    </div>
-    <div class="stat">
-      Dépenses<br><b id="expenses"></b>
-    </div>
+    <div class="stat">Revenus<br><b id="income"></b></div>
+    <div class="stat">Dépenses<br><b id="expenses"></b></div>
   </div>
 
   <div id="homePockets"></div>
 
-  <!-- RESET -->
   <div class="card">
     <button onclick="resetKeep()">🔄 Nouveau mois</button>
     <button class="danger" onclick="resetAll()">⚠️ Reset total</button>
   </div>
-
 </div>
 
 <!-- POCHES -->
@@ -173,13 +193,11 @@ small { color:#666; }
     <input id="pocketAmount" type="number">
     <button onclick="addPocket()">Créer</button>
   </div>
-
   <div id="pocketsDiv"></div>
 </div>
 
 <!-- ACTIONS -->
 <div id="actions" class="screen">
-
   <div class="card">
     <b>Ajouter revenu</b>
     <input id="incomeName">
@@ -193,7 +211,6 @@ small { color:#666; }
     <input id="txAmount" type="number">
     <button onclick="addTx()">Dépenser</button>
   </div>
-
 </div>
 
 <!-- FAB -->
@@ -201,13 +218,19 @@ small { color:#666; }
 
 <!-- NAV -->
 <div class="navbar">
-  <button onclick="showScreen('home')">🏠</button>
-  <button onclick="showScreen('pockets')">📦</button>
-  <button onclick="showScreen('actions')">💸</button>
+  <button onclick="showScreen('home')">🏠<span>Accueil</span></button>
+  <button onclick="showScreen('pockets')">📦<span>Poches</span></button>
+  <button onclick="showScreen('actions')">💸<span>Actions</span></button>
 </div>
+
+<!-- LOADER -->
+<div id="loader"><div class="spinner"></div></div>
 
 <script>
 const API = "https://script.google.com/macros/s/AKfycbygLSp3sD0Fxdpgp2TmOlMmT28ifxNMTFdMvVP4oGQG-GTBVds3WiH7HZpxswT9t1TI/exec";
+
+function showLoader(){ loader.style.display="flex"; }
+function hideLoader(){ loader.style.display="none"; }
 
 let incomes = [];
 let pockets = [];
@@ -218,12 +241,10 @@ function showScreen(id){
 }
 
 async function load(){
-  const res = await fetch(API + "?action=getData");
+  const res = await fetch(API+"?action=getData");
   const data = await res.json();
-
   incomes = data.incomes;
   pockets = data.pockets;
-
   update();
 }
 
@@ -231,7 +252,7 @@ function update(){
   const totalIncome = incomes.reduce((s,i)=>s+i.amount,0);
   const totalSpent = pockets.reduce((s,p)=>s+p.spent,0);
 
-  balance.innerText = (totalIncome - totalSpent) + " FCFA";
+  balance.innerText = (totalIncome-totalSpent)+" FCFA";
   income.innerText = totalIncome;
   expenses.innerText = totalSpent;
 
@@ -245,53 +266,57 @@ function update(){
     opt.textContent=p.name;
     txPocket.appendChild(opt);
 
-    const percent = Math.min((p.spent/p.planned)*100,100);
+    const percent=Math.min((p.spent/p.planned)*100,100);
 
-    let color="#4caf50";
-    if(percent>70) color="#ff9800";
-    if(percent>=100) color="#e53935";
-
-    const html = `
+    const html=`
       <div class="card">
         <b>${p.name}</b><br>
-        Reste: ${p.planned - p.spent} FCFA
+        Reste: ${p.planned-p.spent}
         <div class="bar">
-          <div style="width:${percent}%; background:${color}; height:100%;"></div>
+          <div style="width:${percent}%; background:#4caf50; height:100%"></div>
         </div>
-        <small>${Math.round(percent)}%</small>
-      </div>
-    `;
-
-    pocketsDiv.innerHTML += html;
-    homePockets.innerHTML += html;
+      </div>`;
+    
+    pocketsDiv.innerHTML+=html;
+    homePockets.innerHTML+=html;
   });
 }
 
 async function addIncome(){
+  showLoader();
   await fetch(`${API}?action=add&type=income&name=${incomeName.value}&amount=${incomeAmount.value}`);
+  hideLoader();
   load();
 }
 
 async function addPocket(){
+  showLoader();
   await fetch(`${API}?action=add&type=pocket&name=${pocketName.value}&amount=${pocketAmount.value}`);
+  hideLoader();
   load();
 }
 
 async function addTx(){
+  showLoader();
   await fetch(`${API}?action=tx&pocket=${txPocket.value}&amount=${txAmount.value}`);
+  hideLoader();
   load();
 }
 
 async function resetKeep(){
   if(confirm("Nouveau mois ?")){
+    showLoader();
     await fetch(`${API}?action=reset&mode=keepPockets`);
+    hideLoader();
     load();
   }
 }
 
 async function resetAll(){
   if(confirm("Tout supprimer ?")){
+    showLoader();
     await fetch(`${API}?action=reset&mode=all`);
+    hideLoader();
     load();
   }
 }
