@@ -17,12 +17,13 @@ body {
 
 /* HEADER */
 .header {
-  padding:20px 16px;
+  padding:24px 16px;
   background:#1565c0;
+  text-align:center;
 }
 
 .balance {
-  font-size:28px;
+  font-size:34px;
   font-weight:bold;
 }
 
@@ -30,12 +31,10 @@ body {
 .screen {
   display:none;
   padding:12px;
-  padding-bottom:80px;
+  padding-bottom:100px;
 }
 
-.active {
-  display:block;
-}
+.active { display:block; }
 
 /* CARD */
 .card {
@@ -44,6 +43,21 @@ body {
   padding:14px;
   border-radius:16px;
   margin-bottom:12px;
+}
+
+/* STATS */
+.stats {
+  display:flex;
+  gap:10px;
+}
+
+.stat {
+  flex:1;
+  background:white;
+  color:black;
+  padding:12px;
+  border-radius:14px;
+  text-align:center;
 }
 
 /* INPUT */
@@ -87,6 +101,22 @@ button {
   font-size:18px;
 }
 
+/* FLOAT BUTTON */
+.fab {
+  position:fixed;
+  bottom:70px;
+  right:20px;
+  width:60px;
+  height:60px;
+  border-radius:50%;
+  background:#1565c0;
+  color:white;
+  font-size:28px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
 /* PROGRESS */
 .bar {
   background:#eee;
@@ -96,26 +126,31 @@ button {
   margin-top:6px;
 }
 
-small {
-  color:#666;
-}
+small { color:#666; }
 </style>
 </head>
 
 <body>
 
 <div class="header">
-  <div>Solde</div>
+  <div>Solde total</div>
   <div class="balance" id="balance">0 FCFA</div>
 </div>
 
-<!-- ACCUEIL -->
+<!-- HOME -->
 <div id="home" class="screen active">
-  <div class="card">
-    <b>Résumé</b><br>
-    Revenus: <span id="income"></span><br>
-    Dépenses: <span id="expenses"></span>
+
+  <div class="stats">
+    <div class="stat">
+      Revenus<br><b id="income"></b>
+    </div>
+    <div class="stat">
+      Dépenses<br><b id="expenses"></b>
+    </div>
   </div>
+
+  <div id="homePockets"></div>
+
 </div>
 
 <!-- POCHES -->
@@ -130,14 +165,8 @@ small {
   <div id="pocketsDiv"></div>
 </div>
 
-<!-- DEPENSES -->
-<div id="expensesScreen" class="screen">
-  <div class="card">
-    <b>Nouvelle dépense</b>
-    <select id="txPocket"></select>
-    <input id="txAmount" type="number">
-    <button onclick="addTx()">Dépenser</button>
-  </div>
+<!-- ACTIONS -->
+<div id="actions" class="screen">
 
   <div class="card">
     <b>Ajouter revenu</b>
@@ -145,13 +174,24 @@ small {
     <input id="incomeAmount" type="number">
     <button onclick="addIncome()">Ajouter</button>
   </div>
+
+  <div class="card">
+    <b>Nouvelle dépense</b>
+    <select id="txPocket"></select>
+    <input id="txAmount" type="number">
+    <button onclick="addTx()">Dépenser</button>
+  </div>
+
 </div>
 
-<!-- NAVIGATION -->
+<!-- FAB -->
+<div class="fab" onclick="showScreen('actions')">+</div>
+
+<!-- NAV -->
 <div class="navbar">
   <button onclick="showScreen('home')">🏠</button>
   <button onclick="showScreen('pockets')">📦</button>
-  <button onclick="showScreen('expensesScreen')">💸</button>
+  <button onclick="showScreen('actions')">💸</button>
 </div>
 
 <script>
@@ -185,6 +225,7 @@ function update(){
 
   txPocket.innerHTML="";
   pocketsDiv.innerHTML="";
+  homePockets.innerHTML="";
 
   pockets.forEach(p=>{
     const opt=document.createElement("option");
@@ -198,19 +239,19 @@ function update(){
     if(percent>70) color="#ff9800";
     if(percent>=100) color="#e53935";
 
-    const div=document.createElement("div");
-    div.className="card";
-
-    div.innerHTML=`
-      <b>${p.name}</b><br>
-      Reste: ${p.planned - p.spent} FCFA
-      <div class="bar">
-        <div style="width:${percent}%; background:${color}; height:100%;"></div>
+    const html = `
+      <div class="card">
+        <b>${p.name}</b><br>
+        Reste: ${p.planned - p.spent} FCFA
+        <div class="bar">
+          <div style="width:${percent}%; background:${color}; height:100%;"></div>
+        </div>
+        <small>${Math.round(percent)}%</small>
       </div>
-      <small>${Math.round(percent)}%</small>
     `;
 
-    pocketsDiv.appendChild(div);
+    pocketsDiv.innerHTML += html;
+    homePockets.innerHTML += html;
   });
 }
 
