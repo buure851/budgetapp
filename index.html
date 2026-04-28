@@ -101,9 +101,9 @@
     <div class="stat">Revenus<br><b id="income" class="text-green">0</b></div>
     <div class="stat">Dépensé<br><b id="expenses" class="text-red">0</b></div>
   </div>
-  <div class="card" id="chartContainer" style="display:none;">
-    <b style="display:block; text-align:center; margin-bottom: 15px; font-size: 14px;">Répartition par Poche</b>
-    <canvas id="expenseChart" height="220"></canvas>
+  <div class="card" id="chartContainer" style="display:none; position: relative; height: 280px; width: 100%;">
+    <b style="display:block; text-align:center; margin-bottom: 10px; font-size: 14px;">Répartition par Poche</b>
+    <canvas id="expenseChart"></canvas>
   </div>
   <div id="homePockets"></div>
 </div>
@@ -284,31 +284,36 @@
       return;
     }
     
+    // 1. On rend le conteneur visible
     document.getElementById('chartContainer').style.display = "block";
 
-    // LE FIX EST ICI : On refuse de dessiner le graphique si l'écran d'accueil est caché
+    // 2. Si on n'est pas sur l'accueil, on coupe tout
     if(!document.getElementById('home').classList.contains('active')) return;
 
-    const ctx = canvas.getContext('2d');
-    if (myChart) myChart.destroy(); // On détruit l'ancien avant d'en créer un nouveau
-    
-    myChart = new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: activePockets.map(p => p.name),
-        datasets: [{
-          data: activePockets.map(p => p.spent),
-          // J'ai ajouté plus de couleurs au cas où tu aurais beaucoup de poches
-          backgroundColor: ['#e53935', '#1e88e5', '#43a047', '#fb8c00', '#8e24aa', '#00acc1', '#fbc02d', '#d81b60', '#3949ab', '#00897b'],
-          borderWidth: 2
-        }]
-      },
-      options: { 
-        responsive: true, 
-        maintainAspectRatio: false, 
-        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } } 
-      }
-    });
+    // 3. LE FIX EST LÀ : On attend 50ms pour laisser le DOM s'afficher correctement
+    setTimeout(() => {
+      const ctx = canvas.getContext('2d');
+      if (myChart) myChart.destroy(); // On nettoie l'ancien
+      
+      myChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: activePockets.map(p => p.name),
+          datasets: [{
+            data: activePockets.map(p => p.spent),
+            backgroundColor: ['#e53935', '#1e88e5', '#43a047', '#fb8c00', '#8e24aa', '#00acc1', '#fbc02d', '#d81b60', '#3949ab', '#00897b'],
+            borderWidth: 2
+          }]
+        },
+        options: { 
+          responsive: true, 
+          maintainAspectRatio: false, 
+          plugins: { 
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } 
+          } 
+        }
+      });
+    }, 50); // Le délai de 50ms
   }
 
   function updateUI(){
