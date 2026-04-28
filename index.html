@@ -1,356 +1,397 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#1565c0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Mon Budget</title>
+  <meta name="theme-color" content="#1565c0">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<style>
-* { box-sizing: border-box; }
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { margin:0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background:#0d47a1; color:white; padding-bottom: 80px; overflow-x: hidden; }
 
-body { margin:0; font-family: Arial; background:#0d47a1; color:white; }
+    /* HEADER */
+    .header { position: relative; padding:30px 16px 20px; background:#1565c0; text-align:center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+    .header-settings { position: absolute; top: 25px; right: 20px; font-size: 24px; cursor: pointer; }
+    .balance { font-size:36px; font-weight:bold; margin-top: 5px; }
 
-/* HEADER */
-.header { padding:28px 16px 20px; background:#1565c0; text-align:center; }
-.balance { font-size:34px; font-weight:bold; }
+    /* SCREENS */
+    .screen { display:none; padding:16px; animation: fadeIn 0.3s ease; }
+    .active { display:block; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-/* SCREENS */
-.screen { display:none; padding:16px; padding-bottom:110px; }
-.active { display:block; }
+    /* CARD & STATS */
+    .card { background:white; color:black; padding:16px; border-radius:18px; margin-bottom:14px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .stats { display:flex; gap:12px; margin-bottom:16px; }
+    .stat { flex:1; background:white; color:black; padding:14px; border-radius:16px; text-align:center; }
+    .stat b { display: block; margin-top: 5px; font-size: 14px; }
 
-/* CARD & STATS */
-.card { background:white; color:black; padding:14px; border-radius:16px; margin-bottom:14px; }
-.stats { display:flex; gap:12px; margin-bottom:16px; }
-.stat { flex:1; background:white; color:black; padding:12px; border-radius:14px; text-align:center; }
+    /* INPUT & BUTTON */
+    input, select { width:100%; padding:14px; margin-top:10px; border-radius:12px; border:1px solid #ddd; background:#f9f9f9; font-size: 16px; }
+    button { width:100%; padding:14px; margin-top:12px; border:none; border-radius:12px; background:#1565c0; color:white; font-weight:bold; font-size: 16px; transition: 0.2s; }
+    button:active { opacity: 0.8; transform: scale(0.98); }
+    .danger { background:#e53935; }
+    .btn-outline { background: transparent; border: 2px solid #1565c0; color: #1565c0; }
 
-/* INPUT & BUTTON */
-input, select { width:100%; padding:14px; margin-top:8px; border-radius:12px; border:none; background:#f3f3f3; font-size: 16px; }
-button { width:100%; padding:14px; margin-top:10px; border:none; border-radius:12px; background:#1565c0; color:white; font-weight:bold; font-size: 16px; }
-.danger { background:#e53935; }
+    /* NAVBAR & FAB */
+    .navbar { position:fixed; bottom:0; left:0; right:0; display:flex; background:white; border-top:1px solid #eee; height:70px; z-index: 100;}
+    .navbar button { flex:1; background:white; color:#777; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:11px; margin-top: 0; border-radius: 0; border: none;}
+    .navbar button.nav-active { color: #1565c0; font-weight: bold; }
+    .navbar span { font-size: 20px; margin-bottom: 2px; }
 
-/* NAVBAR & FAB */
-.navbar { position:fixed; bottom:0; left:0; right:0; display:flex; background:white; border-top:1px solid #ddd; height:65px; z-index: 100;}
-.navbar button { flex:1; background:white; color:#1565c0; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:11px; margin-top: 0; border-radius: 0;}
-.fab { position:fixed; bottom:75px; right:20px; width:60px; height:60px; border-radius:50%; background:#1565c0; color:white; font-size:28px; display:flex; align-items:center; justify-content:center; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.3);}
+    .fab { position:fixed; bottom:85px; right:20px; width:60px; height:60px; border-radius:50%; background:#1565c0; color:white; font-size:32px; display:flex; align-items:center; justify-content:center; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.4); font-weight: bold;}
 
-/* PROGRESS */
-.bar { background:#eee; height:8px; border-radius:10px; overflow:hidden; margin-top:6px; }
+    /* PROGRESS BAR */
+    .bar { background:#eee; height:10px; border-radius:10px; overflow:hidden; margin-top:8px; }
 
-/* HISTORY LIST */
-.history-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; font-size: 14px;}
-.history-item:last-child { border-bottom: none; }
-.history-date { color: #888; font-size: 12px; display: block; margin-top: 2px;}
-.history-comment { color: #666; font-size: 13px; font-style: italic; display: block; margin-top: 4px; background: #f9f9f9; padding: 4px 8px; border-radius: 6px;}
-.text-red { color: #e53935; font-weight: bold; text-align: right;}
-.text-green { color: #4caf50; font-weight: bold; text-align: right;}
+    /* LISTS */
+    .history-item { display: flex; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid #eee; font-size: 14px;}
+    .history-item:last-child { border-bottom: none; }
+    .history-date { color: #999; font-size: 12px; display: block; margin-top: 3px;}
+    .history-comment { color: #666; font-size: 12px; font-style: italic; display: block; margin-top: 5px; background: #f1f3f4; padding: 6px 10px; border-radius: 8px;}
+    .text-red { color: #e53935; font-weight: bold; }
+    .text-green { color: #4caf50; font-weight: bold; }
 
-/* LOADER */
-#loader { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; z-index: 999; }
-.spinner { width:40px; height:40px; border:4px solid #ddd; border-top:4px solid #1565c0; border-radius:50%; animation:spin 1s linear infinite; }
-@keyframes spin { 100% { transform:rotate(360deg); } }
+    /* PIN SCREEN */
+    #pinScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0d47a1; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+    #pinInput { text-align: center; letter-spacing: 12px; font-size: 28px; font-weight: bold; color: #1565c0; }
 
-/* PIN SCREEN */
-#pinScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0d47a1; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-#pinScreen h2 { margin-bottom: 20px; }
-#pinInput { text-align: center; letter-spacing: 10px; font-size: 24px; }
-</style>
+    /* LOADER */
+    #loader { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:none; align-items:center; justify-content:center; z-index: 999; }
+    .spinner { width:45px; height:45px; border:5px solid #fff; border-top:5px solid #1565c0; border-radius:50%; animation:spin 1s linear infinite; }
+    @keyframes spin { 100% { transform:rotate(360deg); } }
+  </style>
 </head>
 
 <body>
 
 <div id="pinScreen">
-  <h2>🔒 Code PIN</h2>
-  <div style="background: white; padding: 20px; border-radius: 16px; width: 100%; max-width: 300px;">
-    <p id="pinMessage" style="color: black; text-align: center; margin-top: 0;">Entrez votre code :</p>
-    <input type="password" id="pinInput" maxlength="4" inputmode="numeric">
-    <button onclick="verifyPin()">Valider</button>
+  <h2 style="margin-bottom: 25px;">🔒 Sécurité</h2>
+  <div style="background: white; padding: 25px; border-radius: 20px; width: 100%; max-width: 320px; text-align: center;">
+    <p id="pinMessage" style="color: #444; margin-top: 0; margin-bottom: 15px;">Entrez votre code PIN</p>
+    <input type="password" id="pinInput" maxlength="4" inputmode="numeric" placeholder="••••">
+    <button onclick="verifyPin()" style="margin-top: 20px;">Déverrouiller</button>
   </div>
 </div>
 
 <div class="header">
-  <div>Solde total disponible</div>
+  <div class="header-settings" onclick="showScreen('settings')">⚙️</div>
+  <div style="font-size: 14px; opacity: 0.9;">Solde total disponible</div>
   <div class="balance" id="balance">0 FCFA</div>
 </div>
 
 <div id="home" class="screen active">
   <div class="stats">
-    <div class="stat">Revenus<br><b id="income"></b></div>
-    <div class="stat">Dépensé<br><b id="expenses"></b></div>
+    <div class="stat">Revenus<br><b id="income" class="text-green">0</b></div>
+    <div class="stat">Dépensé<br><b id="expenses" class="text-red">0</b></div>
+  </div>
+  <div class="card" id="chartContainer" style="display:none;">
+    <b style="display:block; text-align:center; margin-bottom: 15px; font-size: 14px;">Répartition par Poche</b>
+    <canvas id="expenseChart" height="220"></canvas>
   </div>
   <div id="homePockets"></div>
 </div>
 
 <div id="pockets" class="screen">
   <div class="card">
-    <b>Créer une poche</b>
-    <input id="pocketName" placeholder="Nom (ex: Loyer)">
-    <input id="pocketAmount" type="number" placeholder="Montant prévu">
-    <input id="pocketComment" placeholder="Note ou commentaire (optionnel)">
-    <button onclick="addPocket()">Créer</button>
+    <b>📦 Créer une nouvelle poche</b>
+    <input id="pocketName" placeholder="Nom (ex: Loyer, Carburant)">
+    <input id="pocketAmount" type="number" placeholder="Montant prévu (FCFA)">
+    <input id="pocketComment" placeholder="Note (ex: Prévu pour le 5)">
+    <button onclick="addPocket()">Enregistrer la poche</button>
   </div>
   <div id="pocketsDiv"></div>
 </div>
 
-<div id="actions" class="screen">
-  <div class="card">
-    <b>Ajouter un revenu</b>
-    <input id="incomeName" placeholder="Source (ex: Salaire)">
-    <input id="incomeAmount" type="number" placeholder="Montant">
-    <input id="incomeComment" placeholder="Note (ex: Mois de Mars)">
-    <button onclick="addIncome()">Ajouter</button>
+<div id="debts" class="screen">
+  <div class="stats">
+    <div class="stat">On me doit<br><b id="owedToMe" class="text-green">0 FCFA</b></div>
+    <div class="stat">Je dois<br><b id="iOwe" class="text-red">0 FCFA</b></div>
   </div>
   <div class="card">
-    <b>Nouvelle dépense</b>
+    <b>🤝 Dette ou Créance</b>
+    <input id="debtPerson" placeholder="Nom de la personne">
+    <input id="debtAmount" type="number" placeholder="Montant">
+    <select id="debtType">
+      <option value="1">Je lui ai prêté (+)</option>
+      <option value="-1">Il m'a prêté (-)</option>
+    </select>
+    <button onclick="addDebt()">Ajouter l'opération</button>
+  </div>
+  <div id="debtsList"></div>
+</div>
+
+<div id="actions" class="screen">
+  <div class="card">
+    <b class="text-red">💸 Nouvelle dépense</b>
     <select id="txPocket"></select>
     <input id="txAmount" type="number" placeholder="Montant dépensé">
-    <input id="txComment" placeholder="Note (ex: Ticket Auchan)">
-    <button onclick="addTx()">Dépenser</button>
+    <input id="txComment" placeholder="Note (ex: Achat supermarché)">
+    <button class="danger" onclick="addTx()">Valider la dépense</button>
+  </div>
+  <div class="card">
+    <b class="text-green">💰 Ajouter un revenu</b>
+    <input id="incomeName" placeholder="Source (ex: Salaire, Virement)">
+    <input id="incomeAmount" type="number" placeholder="Montant reçu">
+    <input id="incomeComment" placeholder="Note (ex: Bonus mois X)">
+    <button class="btn-outline" onclick="addIncome()">Ajouter au solde</button>
+  </div>
+  <div class="card">
+    <b>🔄 Transfert entre poches</b>
+    <select id="transferFrom"></select>
+    <select id="transferTo"></select>
+    <input id="transferAmount" type="number" placeholder="Montant à déplacer">
+    <button style="background: #546e7a;" onclick="addTransfer()">Transférer maintenant</button>
   </div>
 </div>
 
 <div id="history" class="screen">
   <div class="card">
-    <b>Dernières transactions</b>
-    <div id="historyList" style="margin-top: 10px;"></div>
+    <b>📜 Historique des transactions</b>
+    <div id="historyList" style="margin-top: 15px;"></div>
   </div>
 </div>
 
 <div id="settings" class="screen">
   <div class="card">
-    <b>Sécurité : Modifier le code PIN</b>
+    <b>🔒 Sécurité : Changer le PIN</b>
     <input id="oldPin" type="password" placeholder="Ancien code PIN" maxlength="4" inputmode="numeric">
     <input id="newPin" type="password" placeholder="Nouveau code PIN" maxlength="4" inputmode="numeric">
-    <button onclick="changePin()">Enregistrer le nouveau code</button>
+    <button onclick="changePin()">Mettre à jour le code</button>
   </div>
   <div class="card">
-    <b>Gestion des données</b>
-    <button onclick="resetKeep()" style="background: #ff9800;">🔄 Nouveau mois (Garder les poches)</button>
-    <button class="danger" onclick="resetAll()">⚠️ Tout réinitialiser</button>
+    <b>⚠️ Gestion des données</b>
+    <button onclick="resetKeep()" style="background: #ffa000;">🔄 Nouveau mois (Garder les poches)</button>
+    <button class="danger" onclick="resetAll()" style="margin-top: 15px;">🗑️ Tout effacer (RAZ)</button>
   </div>
 </div>
 
 <div class="fab" onclick="showScreen('actions')">+</div>
 
 <div class="navbar">
-  <button onclick="showScreen('home')">🏠<span>Accueil</span></button>
-  <button onclick="showScreen('pockets')">📦<span>Poches</span></button>
-  <button onclick="showScreen('history')">📜<span>Historique</span></button>
-  <button onclick="showScreen('settings')">⚙️<span>Paramètres</span></button>
+  <button id="nav-home" onclick="showScreen('home')" class="nav-active"><span>🏠</span>Accueil</button>
+  <button id="nav-pockets" onclick="showScreen('pockets')"><span>📦</span>Poches</button>
+  <button id="nav-debts" onclick="showScreen('debts')"><span>🤝</span>Dettes</button>
+  <button id="nav-history" onclick="showScreen('history')"><span>📜</span>Historique</button>
 </div>
 
 <div id="loader"><div class="spinner"></div></div>
 
 <script>
-const API = "https://script.google.com/macros/s/AKfycbygLSp3sD0Fxdpgp2TmOlMmT28ifxNMTFdMvVP4oGQG-GTBVds3WiH7HZpxswT9t1TI/exec";
+  const API = "https://script.google.com/macros/s/AKfycbygLSp3sD0Fxdpgp2TmOlMmT28ifxNMTFdMvVP4oGQG-GTBVds3WiH7HZpxswT9t1TI/exec";
 
-function showLoader(){ document.getElementById('loader').style.display="flex"; }
-function hideLoader(){ document.getElementById('loader').style.display="none"; }
+  let incomes = [], pockets = [], historyData = [], debts = [], myChart = null;
 
-let incomes = [];
-let pockets = [];
-let historyData = [];
+  function showLoader(){ document.getElementById('loader').style.display="flex"; }
+  function hideLoader(){ document.getElementById('loader').style.display="none"; }
 
-function showScreen(id){
-  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-}
-
-function formatMoney(amount) {
-  return new Intl.NumberFormat('fr-FR').format(amount);
-}
-
-// ---- SYSTEME DE CODE PIN ----
-function initApp() {
-  const savedPin = localStorage.getItem('budgetPin');
-  if (!savedPin) {
-    document.getElementById('pinMessage').innerText = "Créez un code PIN à 4 chiffres :";
+  function showScreen(id){
+    document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+    
+    // Update navbar state
+    document.querySelectorAll(".navbar button").forEach(b=>b.classList.remove("nav-active"));
+    const navBtn = document.getElementById("nav-" + id);
+    if(navBtn) navBtn.classList.add("nav-active");
+    
+    if(id === 'home') updateGraph();
   }
-}
 
-function verifyPin() {
-  const input = document.getElementById('pinInput').value;
-  const savedPin = localStorage.getItem('budgetPin');
+  function formatMoney(amount) {
+    return new Intl.NumberFormat('fr-FR').format(amount);
+  }
 
-  if(input.length < 4) return alert("Le code doit faire 4 chiffres.");
+  // --- SÉCURITÉ PIN ---
+  function initApp() {
+    const savedPin = localStorage.getItem('budgetPin');
+    if (!savedPin) document.getElementById('pinMessage').innerText = "Créez votre code PIN (4 chiffres)";
+  }
 
-  if (!savedPin) {
-    localStorage.setItem('budgetPin', input);
-    alert("PIN enregistré !");
-    document.getElementById('pinScreen').style.display = 'none';
-    load();
-  } else {
-    if (input === savedPin) {
+  function verifyPin() {
+    const input = document.getElementById('pinInput').value;
+    const savedPin = localStorage.getItem('budgetPin');
+    if(input.length < 4) return alert("Le code doit comporter 4 chiffres.");
+    if (!savedPin) {
+      localStorage.setItem('budgetPin', input);
+      alert("Code PIN créé !");
       document.getElementById('pinScreen').style.display = 'none';
       load();
     } else {
-      alert("Code PIN incorrect !");
-      document.getElementById('pinInput').value = "";
+      if (input === savedPin) {
+        document.getElementById('pinScreen').style.display = 'none';
+        load();
+      } else {
+        alert("Code PIN incorrect.");
+        document.getElementById('pinInput').value = "";
+      }
     }
   }
-}
 
-function changePin() {
-  const oldP = document.getElementById('oldPin').value;
-  const newP = document.getElementById('newPin').value;
-  const savedPin = localStorage.getItem('budgetPin');
+  function changePin() {
+    const oldP = document.getElementById('oldPin').value;
+    const newP = document.getElementById('newPin').value;
+    const savedPin = localStorage.getItem('budgetPin');
+    if(oldP !== savedPin) return alert("Ancien code incorrect.");
+    if(newP.length < 4) return alert("Le nouveau code doit faire 4 chiffres.");
+    localStorage.setItem('budgetPin', newP);
+    alert("Code PIN modifié !");
+    document.getElementById('oldPin').value = ""; document.getElementById('newPin').value = "";
+  }
   
-  if(oldP !== savedPin) return alert("L'ancien code PIN est incorrect.");
-  if(newP.length < 4) return alert("Le nouveau code doit faire 4 chiffres.");
-  
-  localStorage.setItem('budgetPin', newP);
-  alert("Code PIN modifié avec succès !");
-  document.getElementById('oldPin').value = "";
-  document.getElementById('newPin').value = "";
-}
+  initApp();
 
-initApp();
-// -----------------------------
+  // --- CHARGEMENT DES DONNÉES ---
+  async function load(){
+    const cache = localStorage.getItem("budgetCache");
+    if(cache) {
+      const d = JSON.parse(cache);
+      incomes = d.incomes; pockets = d.pockets; historyData = d.history; debts = d.debts || [];
+      updateUI();
+    } else { showLoader(); }
 
-async function load(){
-  const cachedData = localStorage.getItem("budgetCache");
-  if(cachedData) {
-    const parsed = JSON.parse(cachedData);
-    incomes = parsed.incomes || [];
-    pockets = parsed.pockets || [];
-    historyData = parsed.history || [];
-    update();
-  } else {
-    showLoader();
+    try {
+      const res = await fetch(API+"?action=getData", { redirect: "follow" });
+      const data = await res.json();
+      localStorage.setItem("budgetCache", JSON.stringify(data));
+      incomes = data.incomes; pockets = data.pockets; historyData = data.history; debts = data.debts || [];
+      updateUI();
+    } catch(e) { console.error("Erreur réseau"); } finally { hideLoader(); }
   }
 
-  try {
-    const res = await fetch(API+"?action=getData", { method: "GET", redirect: "follow" });
-    const data = await res.json();
+  function updateGraph() {
+    const canvas = document.getElementById('expenseChart');
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (myChart) myChart.destroy();
     
-    localStorage.setItem("budgetCache", JSON.stringify(data));
-    incomes = data.incomes;
-    pockets = data.pockets;
-    historyData = data.history;
-    update();
-  } catch(e) {
-    console.log("Mode hors-ligne, impossible de joindre le serveur.");
-  } finally {
-    hideLoader();
-  }
-}
-
-function update(){
-  const totalIncome = incomes.reduce((s,i)=>s+i.amount,0);
-  const totalSpent = pockets.reduce((s,p)=>s+p.spent,0);
-
-  document.getElementById('balance').innerText = formatMoney(totalIncome - totalSpent) + " FCFA";
-  document.getElementById('income').innerText = formatMoney(totalIncome) + " FCFA";
-  document.getElementById('expenses').innerText = formatMoney(totalSpent) + " FCFA";
-
-  const txPocket = document.getElementById('txPocket');
-  const pocketsDiv = document.getElementById('pocketsDiv');
-  const homePockets = document.getElementById('homePockets');
-  const historyList = document.getElementById('historyList');
-
-  txPocket.innerHTML=""; pocketsDiv.innerHTML=""; homePockets.innerHTML=""; historyList.innerHTML="";
-
-  pockets.forEach(p=>{
-    const opt = document.createElement("option");
-    opt.value = p.name;
-    opt.textContent = p.name;
-    txPocket.appendChild(opt);
-
-    const percent = Math.min((p.spent/p.planned)*100, 100);
-    let color = "#4caf50";
-    if(percent > 75) color = "#ff9800";
-    if(percent >= 100) color = "#f44336";
-
-    const html=`
-      <div class="card">
-        <b>${p.name}</b><br>
-        Reste: ${formatMoney(p.planned - p.spent)} / ${formatMoney(p.planned)} FCFA
-        <div class="bar">
-          <div style="width:${percent}%; background:${color}; height:100%"></div>
-        </div>
-      </div>`;
-    pocketsDiv.innerHTML += html;
-    homePockets.innerHTML += html;
-  });
-
-  if(historyData.length === 0) {
-    historyList.innerHTML = "<p style='color:#888; text-align:center;'>Aucune transaction.</p>";
-  } else {
-    historyData.forEach(h => {
-      const isDepense = h.type === "Dépense";
-      const colorClass = isDepense ? "text-red" : "text-green";
-      const sign = isDepense ? "-" : "+";
-      const commentHtml = h.comment ? `<span class="history-comment">${h.comment}</span>` : "";
-      
-      historyList.innerHTML += `
-        <div class="history-item">
-          <div style="flex: 1;">
-            <b>${h.name}</b>
-            <span class="history-date">${h.date || 'Récemment'}</span>
-            ${commentHtml}
-          </div>
-          <div class="${colorClass}">${sign}${formatMoney(h.amount)}</div>
-        </div>
-      `;
+    const activePockets = pockets.filter(p => p.spent > 0);
+    if(activePockets.length === 0) {
+      document.getElementById('chartContainer').style.display = "none";
+      return;
+    }
+    document.getElementById('chartContainer').style.display = "block";
+    myChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: activePockets.map(p => p.name),
+        datasets: [{
+          data: activePockets.map(p => p.spent),
+          backgroundColor: ['#e53935', '#1e88e5', '#43a047', '#fb8c00', '#8e24aa', '#00acc1', '#fbc02d'],
+          borderWidth: 2
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } } }
     });
   }
-}
 
-async function addIncome(){
-  const name = document.getElementById('incomeName').value.trim();
-  const amount = document.getElementById('incomeAmount').value;
-  const comment = document.getElementById('incomeComment').value.trim();
-  
-  if(!name || !amount || isNaN(amount) || amount <= 0) return alert("Données invalides.");
-  showLoader();
-  await fetch(`${API}?action=add&type=income&name=${encodeURIComponent(name)}&amount=${amount}&comment=${encodeURIComponent(comment)}`, { method: "GET", redirect: "follow" });
-  
-  document.getElementById('incomeName').value = ""; document.getElementById('incomeAmount').value = ""; document.getElementById('incomeComment').value = "";
-  load();
-}
+  function updateUI(){
+    const totalInc = incomes.reduce((s,i)=>s+i.amount,0);
+    const totalExp = pockets.reduce((s,p)=>s+p.spent,0);
 
-async function addPocket(){
-  const name = document.getElementById('pocketName').value.trim();
-  const amount = document.getElementById('pocketAmount').value;
-  const comment = document.getElementById('pocketComment').value.trim();
+    document.getElementById('balance').innerText = formatMoney(totalInc - totalExp) + " FCFA";
+    document.getElementById('income').innerText = formatMoney(totalInc);
+    document.getElementById('expenses').innerText = formatMoney(totalExp);
 
-  if(!name || !amount || isNaN(amount) || amount <= 0) return alert("Données invalides.");
-  showLoader();
-  await fetch(`${API}?action=add&type=pocket&name=${encodeURIComponent(name)}&amount=${amount}&comment=${encodeURIComponent(comment)}`, { method: "GET", redirect: "follow" });
-  
-  document.getElementById('pocketName').value = ""; document.getElementById('pocketAmount').value = ""; document.getElementById('pocketComment').value = "";
-  load();
-}
+    // Listes et Selects
+    const txP = document.getElementById('txPocket'), tF = document.getElementById('transferFrom'), tT = document.getElementById('transferTo');
+    const pDiv = document.getElementById('pocketsDiv'), hP = document.getElementById('homePockets'), hL = document.getElementById('historyList'), dL = document.getElementById('debtsList');
 
-async function addTx(){
-  const pocket = document.getElementById('txPocket').value;
-  const amount = document.getElementById('txAmount').value;
-  const comment = document.getElementById('txComment').value.trim();
+    txP.innerHTML = "<option disabled selected>Sélectionner...</option>";
+    tF.innerHTML = ""; tT.innerHTML = ""; pDiv.innerHTML = ""; hP.innerHTML = ""; hL.innerHTML = ""; dL.innerHTML = "";
 
-  if(!pocket || !amount || isNaN(amount) || amount <= 0) return alert("Données invalides.");
-  showLoader();
-  await fetch(`${API}?action=tx&pocket=${encodeURIComponent(pocket)}&amount=${amount}&comment=${encodeURIComponent(comment)}`, { method: "GET", redirect: "follow" });
-  
-  document.getElementById('txAmount').value = ""; document.getElementById('txComment').value = "";
-  load();
-}
+    pockets.forEach(p => {
+      txP.innerHTML += `<option value="${p.name}">${p.name}</option>`;
+      tF.innerHTML += `<option value="${p.name}">${p.name}</option>`;
+      tT.innerHTML += `<option value="${p.name}">${p.name}</option>`;
 
-async function resetKeep(){
-  if(confirm("Démarrer un nouveau mois ? Tes poches seront conservées mais vidées.")){
-    showLoader();
-    await fetch(`${API}?action=reset&mode=keepPockets`, { method: "GET", redirect: "follow" });
-    load();
+      const perc = Math.min((p.spent/p.planned)*100, 100);
+      let color = "#4caf50"; if(perc > 75) color = "#ffa000"; if(perc >= 100) color = "#e53935";
+
+      const html = `<div class="card">
+        <div style="display:flex; justify-content:space-between"><b>${p.name}</b> <span>${formatMoney(p.planned - p.spent)} restant</span></div>
+        <div class="bar"><div style="width:${perc}%; background:${color}; height:100%"></div></div>
+        <small style="color:#777; font-size:11px; margin-top:5px; display:block">Prévu: ${formatMoney(p.planned)} FCFA</small>
+      </div>`;
+      pDiv.innerHTML += html; hP.innerHTML += html;
+    });
+
+    updateGraph();
+
+    // Dettes
+    let toMe = 0, iOwe = 0;
+    debts.forEach(d => {
+      if(d.amount > 0) toMe += d.amount; else iOwe += Math.abs(d.amount);
+      dL.innerHTML += `<div class="card" style="margin-bottom:8px; padding:12px">
+        <div style="display:flex; justify-content:space-between; align-items:center">
+          <div><b>${d.person}</b><br><small>${d.amount > 0 ? 'Me doit' : 'Je lui dois'}</small></div>
+          <div class="${d.amount > 0 ? 'text-green' : 'text-red'}">${formatMoney(Math.abs(d.amount))} FCFA</div>
+        </div>
+      </div>`;
+    });
+    document.getElementById('owedToMe').innerText = formatMoney(toMe) + " FCFA";
+    document.getElementById('iOwe').innerText = formatMoney(iOwe) + " FCFA";
+
+    // Historique
+    if(historyData.length === 0) hL.innerHTML = "<p style='color:#999; text-align:center;'>Aucune activité.</p>";
+    historyData.forEach(h => {
+      let cls = "text-red", sign = "-";
+      if(h.type === "Revenu" || (h.type === "Dette" && h.name.includes("Emprunt"))) { cls = "text-green"; sign = "+"; }
+      if(h.type === "Transfert") { cls = ""; sign = "🔄 "; }
+      hL.innerHTML += `<div class="history-item">
+        <div style="flex:1"><b>${h.name}</b><span class="history-date">${h.date}</span>${h.comment ? `<span class="history-comment">${h.comment}</span>` : ""}</div>
+        <div class="${cls}" style="white-space:nowrap">${sign}${formatMoney(h.amount)}</div>
+      </div>`;
+    });
   }
-}
 
-async function resetAll(){
-  if(confirm("Tout supprimer définitivement ?")){
-    showLoader();
-    await fetch(`${API}?action=reset&mode=all`, { method: "GET", redirect: "follow" });
-    localStorage.removeItem("budgetCache");
-    load();
+  // --- ACTIONS ---
+  async function addIncome(){
+    const n = document.getElementById('incomeName').value, a = document.getElementById('incomeAmount').value, c = document.getElementById('incomeComment').value;
+    if(!n || !a) return alert("Champs requis !");
+    showLoader(); await fetch(`${API}?action=add&type=income&name=${encodeURIComponent(n)}&amount=${a}&comment=${encodeURIComponent(c)}`, { redirect: "follow" });
+    document.getElementById('incomeName').value=""; document.getElementById('incomeAmount').value=""; document.getElementById('incomeComment').value=""; load();
   }
-}
+
+  async function addPocket(){
+    const n = document.getElementById('pocketName').value, a = document.getElementById('pocketAmount').value, c = document.getElementById('pocketComment').value;
+    if(!n || !a) return alert("Champs requis !");
+    showLoader(); await fetch(`${API}?action=add&type=pocket&name=${encodeURIComponent(n)}&amount=${a}&comment=${encodeURIComponent(c)}`, { redirect: "follow" });
+    document.getElementById('pocketName').value=""; document.getElementById('pocketAmount').value=""; document.getElementById('pocketComment').value=""; load();
+  }
+
+  async function addTx(){
+    const p = document.getElementById('txPocket').value, a = document.getElementById('txAmount').value, c = document.getElementById('txComment').value;
+    if(!p || !a) return alert("Sélectionnez une poche et un montant.");
+    showLoader(); await fetch(`${API}?action=tx&pocket=${encodeURIComponent(p)}&amount=${a}&comment=${encodeURIComponent(c)}`, { redirect: "follow" });
+    document.getElementById('txAmount').value=""; document.getElementById('txComment').value=""; load();
+  }
+
+  async function addTransfer(){
+    const f = document.getElementById('transferFrom').value, t = document.getElementById('transferTo').value, a = document.getElementById('transferAmount').value;
+    if(f === t || !a) return alert("Transfert invalide.");
+    showLoader(); await fetch(`${API}?action=transfer&from=${encodeURIComponent(f)}&to=${encodeURIComponent(t)}&amount=${a}`, { redirect: "follow" });
+    document.getElementById('transferAmount').value=""; load();
+  }
+
+  async function addDebt(){
+    const p = document.getElementById('debtPerson').value, a = document.getElementById('debtAmount').value, t = document.getElementById('debtType').value;
+    if(!p || !a) return alert("Champs requis !");
+    showLoader(); await fetch(`${API}?action=debt&person=${encodeURIComponent(p)}&amount=${a*t}`, { redirect: "follow" });
+    document.getElementById('debtPerson').value=""; document.getElementById('debtAmount').value=""; load();
+  }
+
+  async function resetKeep(){
+    if(confirm("Nouveau mois ? (Poches et dettes conservées)")){
+      showLoader(); await fetch(`${API}?action=reset&mode=keepPockets`, { redirect: "follow" }); load();
+    }
+  }
+
+  async function resetAll(){
+    if(confirm("ATTENTION : Supprimer TOUTES les données ?")){
+      showLoader(); await fetch(`${API}?action=reset&mode=all`, { redirect: "follow" }); localStorage.removeItem("budgetCache"); load();
+    }
+  }
 </script>
-
 </body>
 </html>
