@@ -635,42 +635,48 @@
 
       if (isReceivable) {
         // --- CAS 1 : ON ME REMBOURSE (CRÉANCE) ---
-        // On ajoute la somme aux revenus pour que le solde augmente
         incomes.push({ id: newId, name: "Remb. reçu de " + person, amount: absAmount, comment: "Dette soldée" });
         historyData.unshift({ id: newId, type: "Revenu", name: "Remboursement " + person, amount: absAmount, date: dateStr, comment: "Argent récupéré", account: "Ajouté au Solde" });
         
-        // Envoi silencieux au serveur (on envoie l'inverse pour mettre la dette à zéro sur Excel)
-        fetch(`${getApiUrl('debt')}&person=${encodeURIComponent(person)}&amount=${-currentAmount}&comment=Remboursement`, { redirect: "follow" }).catch(e => console.error(e));
+        // CORRECTION : On informe le serveur du nouveau revenu
+        fetch(`${getApiUrl('add')}&type=income&name=${encodeURIComponent("Remb. reçu de " + person)}&amount=${absAmount}&comment=Dette soldée`, { redirect: "follow" }).catch(e => console.error(e));
         
       } else {
         // --- CAS 2 : JE REMBOURSE (DETTE) ---
         const choice = prompt("Comment déduire ce remboursement ?\n1 : Directement du Solde (Revenu négatif)\n2 : D'une Poche spécifique", "1");
         
         if (choice === "1") {
-          // Déduction du solde direct (on crée un revenu négatif pour baisser le total disponible)
+          // Déduction du solde direct
           incomes.push({ id: newId, name: "Remb. payé à " + person, amount: -absAmount, comment: "Dette soldée" });
           historyData.unshift({ id: newId, type: "Dépense", name: "Remboursement " + person, amount: absAmount, date: dateStr, comment: "Dette payée", account: "Déduit du Solde" });
+          
+          // CORRECTION : On informe le serveur du revenu négatif
+          fetch(`${getApiUrl('add')}&type=income&name=${encodeURIComponent("Remb. payé à " + person)}&amount=${-absAmount}&comment=Dette soldée`, { redirect: "follow" }).catch(e => console.error(e));
+
         } else if (choice === "2") {
-          // Déduction d'une poche
+          // Déduction d'une poche (tolère les minuscules/majuscules)
           const pName = prompt("Entrez le NOM de la poche à débiter :\n" + pockets.map(p => p.name).join(", "));
-          const pIndex = pockets.findIndex(p => p.name === pName);
+          const pIndex = pockets.findIndex(p => p.name.toLowerCase() === (pName || "").toLowerCase().trim());
           
           if (pIndex === -1) return alert("Poche introuvable. Opération annulée.");
           
+          const realPocketName = pockets[pIndex].name;
           pockets[pIndex].spent += absAmount;
-          historyData.unshift({ id: newId, type: "Dépense", name: "Remboursement " + person, amount: absAmount, date: dateStr, comment: "Dette payée", account: "Poche : " + pName });
+          historyData.unshift({ id: newId, type: "Dépense", name: "Remboursement " + person, amount: absAmount, date: dateStr, comment: "Dette payée", account: "Poche : " + realPocketName });
+          
+          // CORRECTION : On informe le serveur de la dépense dans la poche
+          fetch(`${getApiUrl('tx')}&pocket=${encodeURIComponent(realPocketName)}&amount=${absAmount}&comment=Dette payée`, { redirect: "follow" }).catch(e => console.error(e));
+
         } else {
-          return; // Annulation si mauvais choix
+          return; // Annulation
         }
-        
-        // Envoi silencieux au serveur
-        fetch(`${getApiUrl('debt')}&person=${encodeURIComponent(person)}&amount=${-currentAmount}&comment=Remboursement`, { redirect: "follow" }).catch(e => console.error(e));
       }
 
-      // On retire la dette de la liste locale puisqu'elle est remboursée
-      debts = debts.filter(d => d.person !== person);
+      // Dans tous les cas, on informe le serveur que la dette est annulée
+      fetch(`${getApiUrl('debt')}&person=${encodeURIComponent(person)}&amount=${-currentAmount}&comment=Remboursement`, { redirect: "follow" }).catch(e => console.error(e));
 
-      // Sauvegarde du cache et mise à jour de l'affichage
+      // On nettoie la dette locale et on met à jour l'écran
+      debts = debts.filter(d => d.person !== person);
       localStorage.setItem("budgetCache_" + currentUser, JSON.stringify({incomes, pockets, history: historyData, debts}));
       updateUI();
 
