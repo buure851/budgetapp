@@ -628,24 +628,55 @@
     const action = prompt(`Dette de ${person} (${formatMoney(Math.abs(currentAmount))} FCFA)\n\n1 : Marquer comme remboursé\n2 : Voir dans l'historique pour supprimer\n\nTapez 1 ou 2 :`, "1");
     
     if(action === "1") {
-      const isMeRepaying = currentAmount < 0; 
-      const amountToLog = isMeRepaying ? Math.abs(currentAmount) : -Math.abs(currentAmount);
-      
-      // 1. Mise à jour locale instantanée (on retire la dette)
+      const isReceivable = currentAmount > 0; // Cas où on me doit de l'argent (Créance)
+      const absAmount = Math.abs(currentAmount);
+      const dateStr = new Date().toLocaleString('fr-FR');
+      const newId = "temp_" + Date.now();
+
+      if (isReceivable) {
+        // --- CAS 1 : ON ME REMBOURSE (CRÉANCE) ---
+        // On ajoute la somme aux revenus pour que le solde augmente
+        incomes.push({ id: newId, name: "Remb. reçu de " + person, amount: absAmount, comment: "Dette soldée" });
+        historyData.unshift({ id: newId, type: "Revenu", name: "Remboursement " + person, amount: absAmount, date: dateStr, comment: "Argent récupéré", account: "Ajouté au Solde" });
+        
+        // Envoi silencieux au serveur (on envoie l'inverse pour mettre la dette à zéro sur Excel)
+        fetch(`${getApiUrl('debt')}&person=${encodeURIComponent(person)}&amount=${-currentAmount}&comment=Remboursement`, { redirect: "follow" }).catch(e => console.error(e));
+        
+      } else {
+        // --- CAS 2 : JE REMBOURSE (DETTE) ---
+        const choice = prompt("Comment déduire ce remboursement ?\n1 : Directement du Solde (Revenu négatif)\n2 : D'une Poche spécifique", "1");
+        
+        if (choice === "1") {
+          // Déduction du solde direct (on crée un revenu négatif pour baisser le total disponible)
+          incomes.push({ id: newId, name: "Remb. payé à " + person, amount: -absAmount, comment: "Dette soldée" });
+          historyData.unshift({ id: newId, type: "Dépense", name: "Remboursement " + person, amount: absAmount, date: dateStr, comment: "Dette payée", account: "Déduit du Solde" });
+        } else if (choice === "2") {
+          // Déduction d'une poche
+          const pName = prompt("Entrez le NOM de la poche à débiter :\n" + pockets.map(p => p.name).join(", "));
+          const pIndex = pockets.findIndex(p => p.name === pName);
+          
+          if (pIndex === -1) return alert("Poche introuvable. Opération annulée.");
+          
+          pockets[pIndex].spent += absAmount;
+          historyData.unshift({ id: newId, type: "Dépense", name: "Remboursement " + person, amount: absAmount, date: dateStr, comment: "Dette payée", account: "Poche : " + pName });
+        } else {
+          return; // Annulation si mauvais choix
+        }
+        
+        // Envoi silencieux au serveur
+        fetch(`${getApiUrl('debt')}&person=${encodeURIComponent(person)}&amount=${-currentAmount}&comment=Remboursement`, { redirect: "follow" }).catch(e => console.error(e));
+      }
+
+      // On retire la dette de la liste locale puisqu'elle est remboursée
       debts = debts.filter(d => d.person !== person);
-      historyData.unshift({ id: "temp_" + Date.now(), type: "Dette", name: `Remboursement ${person}`, amount: Math.abs(currentAmount), date: new Date().toLocaleString('fr-FR'), comment: "Remboursement", account: "Compte Dette/Créance" });
-      
-      // 2. On actualise l'écran (0 seconde d'attente)
+
+      // Sauvegarde du cache et mise à jour de l'affichage
       localStorage.setItem("budgetCache_" + currentUser, JSON.stringify({incomes, pockets, history: historyData, debts}));
       updateUI();
 
-      // 3. Envoi silencieux au serveur
-      fetch(`${getApiUrl('debt')}&person=${encodeURIComponent(person)}&amount=${amountToLog}&comment=Remboursement`, { redirect: "follow" })
-        .catch(e => console.error("Erreur", e));
-
     } else if (action === "2") {
       showScreen('history');
-      alert(`Cherchez les opérations concernant "${person}" dans la liste ci-dessous pour les modifier ou les supprimer individuellement.`);
+      alert(`Cherchez les opérations concernant "${person}" dans l'historique pour les gérer individuellement.`);
     }
   }
 
