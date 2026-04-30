@@ -499,39 +499,127 @@
     showScreen('pocketDetails');
   }
 
-  async function addIncome(){
-    const n = document.getElementById('incomeName').value, a = document.getElementById('incomeAmount').value, c = document.getElementById('incomeComment').value;
+  // --- ACTIONS OPTIMISÉES (Optimistic UI) ---
+
+  function addIncome(){
+    const n = document.getElementById('incomeName').value;
+    const a = document.getElementById('incomeAmount').value;
+    const c = document.getElementById('incomeComment').value;
     if(!n || !a) return alert("Champs requis !");
-    showLoader(); await fetch(`${getApiUrl('add')}&type=income&name=${encodeURIComponent(n)}&amount=${a}&comment=${encodeURIComponent(c)}`, { redirect: "follow" });
-    document.getElementById('incomeName').value=""; document.getElementById('incomeAmount').value=""; document.getElementById('incomeComment').value=""; load();
+
+    // 1. Mise à jour locale instantanée
+    const amountNum = Number(a);
+    const newId = "temp_" + Date.now();
+    const dateStr = new Date().toLocaleString('fr-FR');
+    
+    incomes.push({ id: newId, name: n, amount: amountNum, comment: c });
+    historyData.unshift({ id: newId, type: "Revenu", name: n, amount: amountNum, date: dateStr, comment: c, account: "Ajouté au Solde" });
+
+    // 2. Sauvegarde cache + actualisation de l'écran
+    localStorage.setItem("budgetCache_" + currentUser, JSON.stringify({incomes, pockets, history: historyData, debts}));
+    updateUI();
+
+    // 3. Vidage des champs
+    document.getElementById('incomeName').value=""; document.getElementById('incomeAmount').value=""; document.getElementById('incomeComment').value="";
+
+    // 4. Envoi silencieux au serveur
+    fetch(`${getApiUrl('add')}&type=income&name=${encodeURIComponent(n)}&amount=${a}&comment=${encodeURIComponent(c)}`, { redirect: "follow" })
+      .catch(e => console.error("Erreur serveur", e));
   }
 
-  async function addPocket(){
-    const n = document.getElementById('pocketName').value, a = document.getElementById('pocketAmount').value, c = document.getElementById('pocketComment').value;
+  function addPocket(){
+    const n = document.getElementById('pocketName').value;
+    const a = document.getElementById('pocketAmount').value;
+    const c = document.getElementById('pocketComment').value;
     if(!n || !a) return alert("Champs requis !");
-    showLoader(); await fetch(`${getApiUrl('add')}&type=pocket&name=${encodeURIComponent(n)}&amount=${a}&comment=${encodeURIComponent(c)}`, { redirect: "follow" });
-    document.getElementById('pocketName').value=""; document.getElementById('pocketAmount').value=""; document.getElementById('pocketComment').value=""; load();
+
+    const amountNum = Number(a);
+    pockets.push({ id: "temp_" + Date.now(), name: n, planned: amountNum, spent: 0, comment: c });
+
+    localStorage.setItem("budgetCache_" + currentUser, JSON.stringify({incomes, pockets, history: historyData, debts}));
+    updateUI();
+
+    document.getElementById('pocketName').value=""; document.getElementById('pocketAmount').value=""; document.getElementById('pocketComment').value="";
+    
+    fetch(`${getApiUrl('add')}&type=pocket&name=${encodeURIComponent(n)}&amount=${a}&comment=${encodeURIComponent(c)}`, { redirect: "follow" })
+      .catch(e => console.error("Erreur serveur", e));
   }
 
-  async function addTx(){
-    const p = document.getElementById('txPocket').value, a = document.getElementById('txAmount').value, c = document.getElementById('txComment').value;
-    if(!p || p==="Sélectionner..." || !a) return alert("Sélectionnez une poche et un montant.");
-    showLoader(); await fetch(`${getApiUrl('tx')}&pocket=${encodeURIComponent(p)}&amount=${a}&comment=${encodeURIComponent(c)}`, { redirect: "follow" });
-    document.getElementById('txAmount').value=""; document.getElementById('txComment').value=""; load();
+  function addTx(){
+    const pName = document.getElementById('txPocket').value;
+    const a = document.getElementById('txAmount').value;
+    const c = document.getElementById('txComment').value;
+    if(!pName || pName==="Sélectionner..." || !a) return alert("Sélectionnez une poche et un montant.");
+
+    const amountNum = Number(a);
+    const dateStr = new Date().toLocaleString('fr-FR');
+
+    // Trouver la poche et augmenter la dépense
+    const pIndex = pockets.findIndex(p => p.name === pName);
+    if(pIndex > -1) pockets[pIndex].spent += amountNum;
+
+    historyData.unshift({ id: "temp_" + Date.now(), type: "Dépense", name: pName, amount: amountNum, date: dateStr, comment: c || "", account: `Déduit de la poche : ${pName}` });
+
+    localStorage.setItem("budgetCache_" + currentUser, JSON.stringify({incomes, pockets, history: historyData, debts}));
+    updateUI();
+
+    document.getElementById('txAmount').value=""; document.getElementById('txComment').value=""; 
+
+    fetch(`${getApiUrl('tx')}&pocket=${encodeURIComponent(pName)}&amount=${a}&comment=${encodeURIComponent(c)}`, { redirect: "follow" })
+      .catch(e => console.error("Erreur serveur", e));
   }
 
-  async function addTransfer(){
-    const f = document.getElementById('transferFrom').value, t = document.getElementById('transferTo').value, a = document.getElementById('transferAmount').value;
+  function addTransfer(){
+    const f = document.getElementById('transferFrom').value;
+    const t = document.getElementById('transferTo').value;
+    const a = document.getElementById('transferAmount').value;
     if(f === t || !a) return alert("Transfert invalide.");
-    showLoader(); await fetch(`${getApiUrl('transfer')}&from=${encodeURIComponent(f)}&to=${encodeURIComponent(t)}&amount=${a}`, { redirect: "follow" });
-    document.getElementById('transferAmount').value=""; load();
+
+    const amountNum = Number(a);
+    const dateStr = new Date().toLocaleString('fr-FR');
+
+    const fromP = pockets.find(p => p.name === f);
+    const toP = pockets.find(p => p.name === t);
+    if(fromP) fromP.planned -= amountNum;
+    if(toP) toP.planned += amountNum;
+
+    historyData.unshift({ id: "temp_" + Date.now(), type: "Transfert", name: `${f} ➡️ ${t}`, amount: amountNum, date: dateStr, comment: "Ajustement", account: "Mouvement interne" });
+
+    localStorage.setItem("budgetCache_" + currentUser, JSON.stringify({incomes, pockets, history: historyData, debts}));
+    updateUI();
+
+    document.getElementById('transferAmount').value=""; 
+
+    fetch(`${getApiUrl('transfer')}&from=${encodeURIComponent(f)}&to=${encodeURIComponent(t)}&amount=${a}`, { redirect: "follow" })
+      .catch(e => console.error("Erreur serveur", e));
   }
 
-  async function addDebt(){
-    const p = document.getElementById('debtPerson').value, a = document.getElementById('debtAmount').value, t = document.getElementById('debtType').value;
-    if(!p || !a) return alert("Champs requis !");
-    showLoader(); await fetch(`${getApiUrl('debt')}&person=${encodeURIComponent(p)}&amount=${a*t}`, { redirect: "follow" });
-    document.getElementById('debtPerson').value=""; document.getElementById('debtAmount').value=""; load();
+  function addDebt(){
+    const personName = document.getElementById('debtPerson').value;
+    const a = document.getElementById('debtAmount').value;
+    const t = document.getElementById('debtType').value;
+    if(!personName || !a) return alert("Champs requis !");
+
+    const amountNum = Number(a) * Number(t);
+    const dateStr = new Date().toLocaleString('fr-FR');
+
+    const debtEntry = debts.find(d => d.person === personName);
+    if(debtEntry) {
+      debtEntry.amount += amountNum;
+    } else {
+      debts.push({ person: personName, amount: amountNum });
+    }
+
+    const typeLabel = amountNum > 0 ? "Prêt à" : "Emprunt à";
+    historyData.unshift({ id: "temp_" + Date.now(), type: "Dette", name: `${typeLabel} ${personName}`, amount: Math.abs(amountNum), date: dateStr, comment: "", account: "Compte Dette/Créance" });
+
+    localStorage.setItem("budgetCache_" + currentUser, JSON.stringify({incomes, pockets, history: historyData, debts}));
+    updateUI();
+
+    document.getElementById('debtPerson').value=""; document.getElementById('debtAmount').value=""; 
+
+    fetch(`${getApiUrl('debt')}&person=${encodeURIComponent(personName)}&amount=${amountNum}`, { redirect: "follow" })
+      .catch(e => console.error("Erreur serveur", e));
   }
 
   async function manageDebt(person, currentAmount) {
