@@ -240,12 +240,15 @@
   function formatMoney(amount) { return new Intl.NumberFormat('fr-FR').format(amount); }
 
   // --- AUTHENTIFICATION ---
-  function initApp() {
+function initApp() {
     const savedUser = localStorage.getItem('budgetUser');
     const savedPin = localStorage.getItem('budgetPin');
     
     if (savedUser && savedPin) {
+      // Si on a déjà les infos en mémoire, on connecte directement l'utilisateur
       document.getElementById('usernameInput').value = savedUser;
+      document.getElementById('pinInput').value = savedPin;
+      startSession(savedUser);
     }
   }
 
@@ -284,7 +287,13 @@
 
   function logout() {
     localStorage.removeItem('budgetCache_' + currentUser);
+    
+    // NOUVEAU : On supprime aussi les identifiants pour ne pas se reconnecter tout seul
+    localStorage.removeItem('budgetUser');
+    localStorage.removeItem('budgetPin');
+    
     currentUser = "";
+    document.getElementById('usernameInput').value = "";
     document.getElementById('pinInput').value = "";
     document.getElementById('authScreen').style.display = 'flex';
   }
