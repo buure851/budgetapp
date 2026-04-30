@@ -234,7 +234,6 @@
     const navBtn = document.getElementById("nav-" + (id==='pocketDetails' ? 'home' : id));
     if(navBtn) navBtn.classList.add("nav-active");
     
-    // NOUVEAU : Sauvegarde l'écran actuel pour cet utilisateur
     if (currentUser) {
       localStorage.setItem('activeScreen_' + currentUser, id);
     }
@@ -244,41 +243,42 @@
 
   function formatMoney(amount) { return new Intl.NumberFormat('fr-FR').format(amount); }
 
-  // --- AUTHENTIFICATION ---
-function initApp() {
+  // --- AUTHENTIFICATION SÉCURISÉE ---
+  function initApp() {
     const savedUser = localStorage.getItem('budgetUser');
     const savedPin = localStorage.getItem('budgetPin');
     
     if (savedUser && savedPin) {
-      // Si on a déjà les infos en mémoire, on connecte directement l'utilisateur
       document.getElementById('usernameInput').value = savedUser;
       document.getElementById('pinInput').value = savedPin;
-      startSession(savedUser);
+      login(); // Relance la vérification au serveur par sécurité
     }
   }
 
-  function login() {
+  async function login() {
     const user = document.getElementById('usernameInput').value.trim();
     const pin = document.getElementById('pinInput').value;
     
     if(!user) return alert("Veuillez entrer un pseudo.");
     if(pin.length < 4) return alert("Le code PIN doit comporter 4 chiffres.");
     
-    const savedUser = localStorage.getItem('budgetUser');
-    const savedPin = localStorage.getItem('budgetPin');
-
-    if (user === savedUser) {
-      if (pin === savedPin) {
-        startSession(user);
-      } else {
-        alert("Code PIN incorrect pour cet utilisateur.");
-      }
-    } else {
-      if(confirm(`Créer un nouveau profil pour "${user}" avec ce code PIN ?`)) {
+    showLoader();
+    try {
+      const response = await fetch(`${API_BASE}?action=auth&user=${encodeURIComponent(user)}&pin=${pin}`, { redirect: "follow" });
+      const result = await response.json();
+      
+      if (result.success) {
         localStorage.setItem('budgetUser', user);
         localStorage.setItem('budgetPin', pin);
         startSession(user);
+      } else {
+        alert(result.message);
+        hideLoader();
       }
+    } catch (e) {
+      alert("Erreur de connexion au serveur.");
+      console.error(e);
+      hideLoader();
     }
   }
 
@@ -288,7 +288,6 @@ function initApp() {
     document.getElementById('welcomeUser').innerText = `Connecté en tant que : ${user}`;
     document.getElementById('settingsUser').innerText = user;
     
-    // NOUVEAU : Restaurer le dernier écran ou afficher l'accueil par défaut
     const lastScreen = localStorage.getItem('activeScreen_' + user) || 'home';
     showScreen(lastScreen);
     
@@ -297,8 +296,7 @@ function initApp() {
 
   function logout() {
     localStorage.removeItem('budgetCache_' + currentUser);
-    localStorage.removeItem('activeScreen_' + currentUser); // NOUVEAU
-    
+    localStorage.removeItem('activeScreen_' + currentUser);
     localStorage.removeItem('budgetUser');
     localStorage.removeItem('budgetPin');
     
@@ -382,14 +380,12 @@ function initApp() {
       let color = "#4caf50"; if(perc > 75) color = "#ffa000"; if(perc >= 100) color = "#e53935";
       const safeName = p.name.replace(/'/g,"\\'");
 
-      // Accueil : Carte cliquable vers Détails
       hP.innerHTML += `<div class="card pocket-card" onclick="openPocketDetails('${safeName}')">
         <div style="display:flex; justify-content:space-between"><b>${p.name}</b> <span>${formatMoney(p.planned - p.spent)} restant</span></div>
         <div class="bar"><div style="width:${perc}%; background:${color}; height:100%"></div></div>
         <small style="color:#777; font-size:11px; margin-top:5px; display:block">Prévu: ${formatMoney(p.planned)} FCFA</small>
       </div>`;
 
-      // Page Poches : Gestion (Modifier/Supprimer)
       pDiv.innerHTML += `<div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div>
@@ -406,7 +402,6 @@ function initApp() {
 
     if(document.getElementById('home').classList.contains('active')) updateGraph();
 
-    // Dettes (Cliquable pour gérer)
     let toMe = 0, iOwe = 0;
     debts.forEach(d => {
       if(d.amount > 0) toMe += d.amount; else iOwe += Math.abs(d.amount);
@@ -421,7 +416,6 @@ function initApp() {
     document.getElementById('owedToMe').innerText = formatMoney(toMe) + " FCFA";
     document.getElementById('iOwe').innerText = formatMoney(iOwe) + " FCFA";
 
-    // Historique global avec l'indication du compte touché
     if(historyData.length === 0) hL.innerHTML = "<p style='color:#999; text-align:center;'>Aucune activité.</p>";
     historyData.forEach(h => {
       let cls = "text-red", sign = "-";
@@ -443,7 +437,6 @@ function initApp() {
     });
   }
 
-  // --- NOUVEAU : DÉTAILS DE LA POCHE ---
   function openPocketDetails(pocketName) {
     const p = pockets.find(x => x.name === pocketName);
     if(!p) return;
@@ -457,7 +450,6 @@ function initApp() {
     document.getElementById('pdBar').style.width = perc + "%";
     document.getElementById('pdBar').style.background = color;
 
-    // Filtrer l'historique pour cette poche
     const list = document.getElementById('pdHistory');
     list.innerHTML = "";
     const pocketHistory = historyData.filter(h => h.type === "Dépense" && h.name === pocketName);
@@ -477,7 +469,6 @@ function initApp() {
     showScreen('pocketDetails');
   }
 
-  // --- ACTIONS D'AJOUT ---
   async function addIncome(){
     const n = document.getElementById('incomeName').value, a = document.getElementById('incomeAmount').value, c = document.getElementById('incomeComment').value;
     if(!n || !a) return alert("Champs requis !");
@@ -513,7 +504,6 @@ function initApp() {
     document.getElementById('debtPerson').value=""; document.getElementById('debtAmount').value=""; load();
   }
 
-  // --- NOUVEAU : GÉRER UNE DETTE ---
   async function manageDebt(person, currentAmount) {
     const action = prompt(`Dette de ${person} (${formatMoney(Math.abs(currentAmount))} FCFA)\n\n1 : Marquer comme remboursé\n2 : Voir dans l'historique pour supprimer\n\nTapez 1 ou 2 :`, "1");
     
@@ -532,7 +522,6 @@ function initApp() {
     }
   }
 
-  // --- NOUVEAU : ÉDITION UNIVERSELLE ---
   async function editItemPrompt(id, name, currentAmount, typeName) {
     const newAmount = prompt(`Nouveau montant pour [${typeName}] ${name} :`, currentAmount);
     if(newAmount === null || newAmount === "") return;
@@ -569,7 +558,6 @@ function initApp() {
     }
   }
 
-  // --- RESET & PDF ---
   async function resetKeep(){
     if(confirm("Nouveau mois ? (Poches et dettes conservées)")){
       showLoader(); await fetch(`${getApiUrl('reset')}&mode=keepPockets`, { redirect: "follow" }); load();
