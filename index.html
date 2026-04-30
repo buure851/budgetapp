@@ -62,9 +62,7 @@
     .pocket-card:active { transform: scale(0.98); }
 
     /* LOGIN / PIN SCREEN */
-    #authScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0d47a1; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-    
-    /* LOADER */
+    #authScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0d47a1; z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }    /* LOADER */
     #loader { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:none; align-items:center; justify-content:center; z-index: 999; }
     .spinner { width:45px; height:45px; border:5px solid #fff; border-top:5px solid #1565c0; border-radius:50%; animation:spin 1s linear infinite; }
     @keyframes spin { 100% { transform:rotate(360deg); } }
@@ -244,14 +242,46 @@
   function formatMoney(amount) { return new Intl.NumberFormat('fr-FR').format(amount); }
 
   // --- AUTHENTIFICATION SÉCURISÉE ---
-  function initApp() {
+  async function initApp() {
     const savedUser = localStorage.getItem('budgetUser');
     const savedPin = localStorage.getItem('budgetPin');
     
     if (savedUser && savedPin) {
-      document.getElementById('usernameInput').value = savedUser;
-      document.getElementById('pinInput').value = savedPin;
-      login(); // Relance la vérification au serveur par sécurité
+      // 1. Affiche le loader immédiatement (l'authScreen reste caché grâce au CSS)
+      showLoader();
+      
+      // 2. Vérification silencieuse en arrière-plan
+      try {
+        const response = await fetch(`${API_BASE}?action=auth&user=${encodeURIComponent(savedUser)}&pin=${savedPin}`, { redirect: "follow" });
+        const result = await response.json();
+        
+        if (result.success) {
+          // Remplissage invisible des champs au cas où
+          document.getElementById('usernameInput').value = savedUser;
+          document.getElementById('pinInput').value = savedPin;
+          
+          // Lancement de la session (restaure la dernière page et cache le loader via load())
+          startSession(savedUser);
+        } else {
+          // Code PIN changé ou invalide : on réaffiche l'écran de connexion
+          document.getElementById('authScreen').style.display = 'flex';
+          hideLoader();
+        }
+      } catch (e) {
+        console.warn("Réseau indisponible, tentative de chargement via le cache...");
+        // Optionnel : Si hors-ligne, on tente de le laisser utiliser l'app avec les données en cache
+        const cache = localStorage.getItem("budgetCache_" + savedUser);
+        if (cache) {
+          startSession(savedUser);
+        } else {
+          document.getElementById('authScreen').style.display = 'flex';
+          hideLoader();
+        }
+      }
+    } else {
+      // Pas d'utilisateur enregistré : on affiche l'écran de connexion
+      document.getElementById('authScreen').style.display = 'flex';
+      hideLoader();
     }
   }
 
