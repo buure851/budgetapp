@@ -23,7 +23,7 @@
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
     /* CARD & STATS */
-    .card { background:white; color:black; padding:16px; border-radius:18px; margin-bottom:14px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .card { background:white; color:black; padding:16px; border-radius:18px; margin-bottom:14px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: relative; }
     .stats { display:flex; gap:12px; margin-bottom:16px; }
     .stat { flex:1; background:white; color:black; padding:14px; border-radius:16px; text-align:center; }
     .stat b { display: block; margin-top: 5px; font-size: 14px; }
@@ -34,7 +34,9 @@
     button:active { opacity: 0.8; transform: scale(0.98); }
     .danger { background:#e53935; }
     .success { background:#4caf50; }
+    .warning { background:#ffa000; }
     .btn-outline { background: transparent; border: 2px solid #1565c0; color: #1565c0; }
+    .btn-small { width: auto; padding: 6px 12px; font-size: 12px; margin-top: 0; }
 
     /* NAVBAR & FAB */
     .navbar { position:fixed; bottom:0; left:0; right:0; display:flex; background:white; border-top:1px solid #eee; height:70px; z-index: 100;}
@@ -50,15 +52,18 @@
     /* LISTS */
     .history-item { display: flex; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid #eee; font-size: 14px; cursor: pointer; }
     .history-item:last-child { border-bottom: none; }
-    .history-date { color: #999; font-size: 12px; display: block; margin-top: 3px;}
+    .history-date { color: #999; font-size: 11px; display: block; margin-top: 3px;}
+    .history-account { color: #1565c0; font-size: 11px; font-weight: bold; display: block; margin-top: 3px;}
     .history-comment { color: #666; font-size: 12px; font-style: italic; display: block; margin-top: 5px; background: #f1f3f4; padding: 6px 10px; border-radius: 8px;}
     .text-red { color: #e53935; font-weight: bold; }
     .text-green { color: #4caf50; font-weight: bold; }
+    
+    .pocket-card { cursor: pointer; transition: 0.2s; }
+    .pocket-card:active { transform: scale(0.98); }
 
-    /* PIN SCREEN */
-    #pinScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0d47a1; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-    #pinInput { text-align: center; letter-spacing: 12px; font-size: 28px; font-weight: bold; color: #1565c0; }
-
+    /* LOGIN / PIN SCREEN */
+    #authScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0d47a1; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+    
     /* LOADER */
     #loader { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:none; align-items:center; justify-content:center; z-index: 999; }
     .spinner { width:45px; height:45px; border:5px solid #fff; border-top:5px solid #1565c0; border-radius:50%; animation:spin 1s linear infinite; }
@@ -68,12 +73,13 @@
 
 <body>
 
-<div id="pinScreen">
-  <h2 style="margin-bottom: 25px;">🔒 Sécurité</h2>
-  <div style="background: white; padding: 25px; border-radius: 20px; width: 100%; max-width: 320px; text-align: center;">
-    <p id="pinMessage" style="color: #444; margin-top: 0; margin-bottom: 15px;">Entrez votre code PIN</p>
-    <input type="password" id="pinInput" maxlength="4" inputmode="numeric" placeholder="••••">
-    <button onclick="verifyPin()" style="margin-top: 20px;">Déverrouiller</button>
+<div id="authScreen">
+  <h2 style="margin-bottom: 10px;">👤 Connexion</h2>
+  <p style="text-align: center; font-size: 14px; opacity: 0.8; margin-bottom: 25px;">Vos données sont liées à votre pseudo.</p>
+  <div style="background: white; padding: 25px; border-radius: 20px; width: 100%; max-width: 320px; text-align: center; color: black;">
+    <input type="text" id="usernameInput" placeholder="Votre pseudo (ex: Karim)">
+    <input type="password" id="pinInput" maxlength="4" inputmode="numeric" placeholder="Code PIN (4 chiffres)" style="letter-spacing: 12px; text-align: center; font-size: 24px;">
+    <button onclick="login()" style="margin-top: 20px;">Accéder à mon budget</button>
   </div>
 </div>
 
@@ -81,18 +87,36 @@
   <div class="header-settings" onclick="showScreen('settings')">⚙️</div>
   <div style="font-size: 14px; opacity: 0.9;">Solde total disponible</div>
   <div class="balance" id="balance">0 FCFA</div>
+  <div id="welcomeUser" style="font-size: 12px; margin-top: 5px; opacity: 0.8;"></div>
 </div>
 
 <div id="home" class="screen active">
   <div class="stats">
-    <div class="stat">Revenus<br><b id="income" class="text-green">0</b></div>
-    <div class="stat">Dépensé<br><b id="expenses" class="text-red">0</b></div>
+    <div class="stat" onclick="showScreen('history')">Revenus<br><b id="income" class="text-green">0</b></div>
+    <div class="stat" onclick="showScreen('history')">Dépensé<br><b id="expenses" class="text-red">0</b></div>
   </div>
   <div class="card" id="chartContainer" style="display:none; position: relative; height: 280px; width: 100%;">
     <b style="display:block; text-align:center; margin-bottom: 10px; font-size: 14px;">Répartition par Poche</b>
     <canvas id="expenseChart"></canvas>
   </div>
+  <h3 style="font-size: 16px; margin: 20px 0 10px;">Mes Poches (Cliquez pour détails)</h3>
   <div id="homePockets"></div>
+</div>
+
+<div id="pocketDetails" class="screen">
+  <button onclick="showScreen('home')" class="btn-outline" style="margin-bottom: 15px;">⬅️ Retour à l'accueil</button>
+  <div class="card">
+    <h2 id="pdTitle" style="margin-top: 0; margin-bottom: 5px;">Nom de la poche</h2>
+    <div style="display:flex; justify-content:space-between; margin-bottom: 10px;">
+        <span>Prévu: <b id="pdPlanned">0</b></span>
+        <span>Reste: <b id="pdLeft">0</b></span>
+    </div>
+    <div class="bar"><div id="pdBar" style="width:0%; background:#4caf50; height:100%"></div></div>
+  </div>
+  <div class="card">
+    <b>📜 Dépenses de cette poche</b>
+    <div id="pdHistory" style="margin-top: 15px;"></div>
+  </div>
 </div>
 
 <div id="pockets" class="screen">
@@ -103,6 +127,7 @@
     <input id="pocketComment" placeholder="Note (ex: Prévu pour le 5)">
     <button onclick="addPocket()">Enregistrer la poche</button>
   </div>
+  <h3 style="font-size: 16px; margin: 20px 0 10px;">Gérer mes poches</h3>
   <div id="pocketsDiv"></div>
 </div>
 
@@ -112,15 +137,16 @@
     <div class="stat">Je dois<br><b id="iOwe" class="text-red">0 FCFA</b></div>
   </div>
   <div class="card">
-    <b>🤝 Dette ou Créance</b>
+    <b>🤝 Nouvelle Dette ou Créance</b>
     <input id="debtPerson" placeholder="Nom de la personne">
     <input id="debtAmount" type="number" placeholder="Montant">
     <select id="debtType">
-      <option value="1">Je lui ai prêté (+)</option>
-      <option value="-1">Il m'a prêté (-)</option>
+      <option value="1">Je lui ai prêté (On me doit)</option>
+      <option value="-1">Il m'a prêté (Je dois)</option>
     </select>
     <button onclick="addDebt()">Ajouter l'opération</button>
   </div>
+  <h3 style="font-size: 16px; margin: 20px 0 10px;">En cours (Cliquez pour rembourser)</h3>
   <div id="debtsList"></div>
 </div>
 
@@ -151,8 +177,8 @@
 <div id="history" class="screen">
   <div class="card">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-        <b>📜 Historique</b>
-        <small style="color:#777">Cliquez pour modifier</small>
+        <b>📜 Historique Global</b>
+        <small style="color:#777">Cliquez pour modifier/supprimer</small>
     </div>
     <div id="historyList" style="margin-top: 15px;"></div>
   </div>
@@ -160,19 +186,18 @@
 
 <div id="settings" class="screen">
   <div class="card">
+    <b>👤 Utilisateur actuel</b>
+    <p id="settingsUser" style="margin-top: 5px; color: #1565c0; font-weight: bold;"></p>
+    <button onclick="logout()" class="btn-outline">Se déconnecter</button>
+  </div>
+  <div class="card">
     <b>📊 Exporter les données</b>
     <p style="font-size:12px; color:#666;">Générez un bilan mensuel au format PDF.</p>
     <button class="success" onclick="generatePDF()">📥 Télécharger le Bilan PDF</button>
   </div>
   <div class="card">
-    <b>🔒 Sécurité : Changer le PIN</b>
-    <input id="oldPin" type="password" placeholder="Ancien code PIN" maxlength="4" inputmode="numeric">
-    <input id="newPin" type="password" placeholder="Nouveau code PIN" maxlength="4" inputmode="numeric">
-    <button onclick="changePin()">Mettre à jour le code</button>
-  </div>
-  <div class="card">
     <b>⚠️ Gestion des données</b>
-    <button onclick="resetKeep()" style="background: #ffa000;">🔄 Nouveau mois (Garder poches)</button>
+    <button onclick="resetKeep()" class="warning">🔄 Nouveau mois (Garder poches)</button>
     <button class="danger" onclick="resetAll()" style="margin-top: 15px;">🗑️ Tout effacer (RAZ)</button>
   </div>
 </div>
@@ -189,9 +214,14 @@
 <div id="loader"><div class="spinner"></div></div>
 
 <script>
-  const API = "https://script.google.com/macros/s/AKfycbygLSp3sD0Fxdpgp2TmOlMmT28ifxNMTFdMvVP4oGQG-GTBVds3WiH7HZpxswT9t1TI/exec";
+  const API_BASE = "https://script.google.com/macros/s/AKfycbygLSp3sD0Fxdpgp2TmOlMmT28ifxNMTFdMvVP4oGQG-GTBVds3WiH7HZpxswT9t1TI/exec"; 
 
   let incomes = [], pockets = [], historyData = [], debts = [], myChart = null;
+  let currentUser = "";
+  
+  function getApiUrl(action) {
+    return `${API_BASE}?user=${encodeURIComponent(currentUser)}&action=${action}`;
+  }
 
   function showLoader(){ document.getElementById('loader').style.display="flex"; }
   function hideLoader(){ document.getElementById('loader').style.display="none"; }
@@ -201,58 +231,69 @@
     document.getElementById(id).classList.add("active");
     
     document.querySelectorAll(".navbar button").forEach(b=>b.classList.remove("nav-active"));
-    const navBtn = document.getElementById("nav-" + id);
+    const navBtn = document.getElementById("nav-" + (id==='pocketDetails' ? 'home' : id));
     if(navBtn) navBtn.classList.add("nav-active");
     
     if(id === 'home') updateGraph();
   }
 
-  function formatMoney(amount) {
-    return new Intl.NumberFormat('fr-FR').format(amount);
-  }
+  function formatMoney(amount) { return new Intl.NumberFormat('fr-FR').format(amount); }
 
-  // --- SÉCURITÉ PIN ---
+  // --- AUTHENTIFICATION ---
   function initApp() {
+    const savedUser = localStorage.getItem('budgetUser');
     const savedPin = localStorage.getItem('budgetPin');
-    if (!savedPin) document.getElementById('pinMessage').innerText = "Créez votre code PIN (4 chiffres)";
+    
+    if (savedUser && savedPin) {
+      document.getElementById('usernameInput').value = savedUser;
+    }
   }
 
-  function verifyPin() {
-    const input = document.getElementById('pinInput').value;
+  function login() {
+    const user = document.getElementById('usernameInput').value.trim();
+    const pin = document.getElementById('pinInput').value;
+    
+    if(!user) return alert("Veuillez entrer un pseudo.");
+    if(pin.length < 4) return alert("Le code PIN doit comporter 4 chiffres.");
+    
+    const savedUser = localStorage.getItem('budgetUser');
     const savedPin = localStorage.getItem('budgetPin');
-    if(input.length < 4) return alert("Le code doit comporter 4 chiffres.");
-    if (!savedPin) {
-      localStorage.setItem('budgetPin', input);
-      alert("Code PIN créé !");
-      document.getElementById('pinScreen').style.display = 'none';
-      load();
-    } else {
-      if (input === savedPin) {
-        document.getElementById('pinScreen').style.display = 'none';
-        load();
+
+    if (user === savedUser) {
+      if (pin === savedPin) {
+        startSession(user);
       } else {
-        alert("Code PIN incorrect.");
-        document.getElementById('pinInput').value = "";
+        alert("Code PIN incorrect pour cet utilisateur.");
+      }
+    } else {
+      if(confirm(`Créer un nouveau profil pour "${user}" avec ce code PIN ?`)) {
+        localStorage.setItem('budgetUser', user);
+        localStorage.setItem('budgetPin', pin);
+        startSession(user);
       }
     }
   }
 
-  function changePin() {
-    const oldP = document.getElementById('oldPin').value;
-    const newP = document.getElementById('newPin').value;
-    const savedPin = localStorage.getItem('budgetPin');
-    if(oldP !== savedPin) return alert("Ancien code incorrect.");
-    if(newP.length < 4) return alert("Le nouveau code doit faire 4 chiffres.");
-    localStorage.setItem('budgetPin', newP);
-    alert("Code PIN modifié !");
-    document.getElementById('oldPin').value = ""; document.getElementById('newPin').value = "";
+  function startSession(user) {
+    currentUser = user;
+    document.getElementById('authScreen').style.display = 'none';
+    document.getElementById('welcomeUser').innerText = `Connecté en tant que : ${user}`;
+    document.getElementById('settingsUser').innerText = user;
+    load();
+  }
+
+  function logout() {
+    localStorage.removeItem('budgetCache_' + currentUser);
+    currentUser = "";
+    document.getElementById('pinInput').value = "";
+    document.getElementById('authScreen').style.display = 'flex';
   }
   
   initApp();
 
-  // --- CHARGEMENT DES DONNÉES ---
+  // --- CHARGEMENT ---
   async function load(){
-    const cache = localStorage.getItem("budgetCache");
+    const cache = localStorage.getItem("budgetCache_" + currentUser);
     if(cache) {
       const d = JSON.parse(cache);
       incomes = d.incomes; pockets = d.pockets; historyData = d.history; debts = d.debts || [];
@@ -260,32 +301,29 @@
     } else { showLoader(); }
 
     try {
-      const res = await fetch(API+"?action=getData", { redirect: "follow" });
+      const res = await fetch(getApiUrl('getData'), { redirect: "follow" });
       const data = await res.json();
-      localStorage.setItem("budgetCache", JSON.stringify(data));
+      localStorage.setItem("budgetCache_" + currentUser, JSON.stringify(data));
       incomes = data.incomes; pockets = data.pockets; historyData = data.history; debts = data.debts || [];
       updateUI();
     } catch(e) { console.error("Erreur réseau"); } finally { hideLoader(); }
   }
 
+  // --- GRAPHIQUE ---
   function updateGraph() {
     const canvas = document.getElementById('expenseChart');
     if(!canvas) return;
-    
     const activePockets = pockets.filter(p => p.spent > 0);
     if(activePockets.length === 0) {
       document.getElementById('chartContainer').style.display = "none";
       return;
     }
-    
     document.getElementById('chartContainer').style.display = "block";
-
     if(!document.getElementById('home').classList.contains('active')) return;
 
     setTimeout(() => {
       const ctx = canvas.getContext('2d');
       if (myChart) myChart.destroy(); 
-      
       myChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
@@ -296,17 +334,12 @@
             borderWidth: 2
           }]
         },
-        options: { 
-          responsive: true, 
-          maintainAspectRatio: false, 
-          plugins: { 
-            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } 
-          } 
-        }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } } }
       });
     }, 50); 
   }
 
+  // --- INTERFACE ---
   function updateUI(){
     const totalInc = incomes.reduce((s,i)=>s+i.amount,0);
     const totalExp = pockets.reduce((s,p)=>s+p.spent,0);
@@ -328,23 +361,38 @@
 
       const perc = p.planned > 0 ? Math.min((p.spent/p.planned)*100, 100) : 0;
       let color = "#4caf50"; if(perc > 75) color = "#ffa000"; if(perc >= 100) color = "#e53935";
+      const safeName = p.name.replace(/'/g,"\\'");
 
-      const html = `<div class="card">
+      // Accueil : Carte cliquable vers Détails
+      hP.innerHTML += `<div class="card pocket-card" onclick="openPocketDetails('${safeName}')">
         <div style="display:flex; justify-content:space-between"><b>${p.name}</b> <span>${formatMoney(p.planned - p.spent)} restant</span></div>
         <div class="bar"><div style="width:${perc}%; background:${color}; height:100%"></div></div>
         <small style="color:#777; font-size:11px; margin-top:5px; display:block">Prévu: ${formatMoney(p.planned)} FCFA</small>
       </div>`;
-      pDiv.innerHTML += html; hP.innerHTML += html;
+
+      // Page Poches : Gestion (Modifier/Supprimer)
+      pDiv.innerHTML += `<div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <b>${p.name}</b><br>
+            <small>Prévu: ${formatMoney(p.planned)} FCFA</small>
+          </div>
+          <div>
+            <button class="btn-small warning" onclick="editItemPrompt('${p.id}', '${safeName}', ${p.planned}, 'Poche')">✏️</button>
+            <button class="btn-small danger" onclick="deleteItemPrompt('${p.id}', '${safeName}', 'Poche')">🗑️</button>
+          </div>
+        </div>
+      </div>`;
     });
 
-    if(document.getElementById('home').classList.contains('active')) {
-      updateGraph();
-    }
+    if(document.getElementById('home').classList.contains('active')) updateGraph();
 
+    // Dettes (Cliquable pour gérer)
     let toMe = 0, iOwe = 0;
     debts.forEach(d => {
       if(d.amount > 0) toMe += d.amount; else iOwe += Math.abs(d.amount);
-      dL.innerHTML += `<div class="card" style="margin-bottom:8px; padding:12px">
+      const safePerson = d.person.replace(/'/g,"\\'");
+      dL.innerHTML += `<div class="card pocket-card" style="margin-bottom:8px; padding:12px" onclick="manageDebt('${safePerson}', ${d.amount})">
         <div style="display:flex; justify-content:space-between; align-items:center">
           <div><b>${d.person}</b><br><small>${d.amount > 0 ? 'Me doit' : 'Je lui dois'}</small></div>
           <div class="${d.amount > 0 ? 'text-green' : 'text-red'}">${formatMoney(Math.abs(d.amount))} FCFA</div>
@@ -354,7 +402,7 @@
     document.getElementById('owedToMe').innerText = formatMoney(toMe) + " FCFA";
     document.getElementById('iOwe').innerText = formatMoney(iOwe) + " FCFA";
 
-    // NOUVEAU : Clic sur l'historique
+    // Historique global avec l'indication du compte touché
     if(historyData.length === 0) hL.innerHTML = "<p style='color:#999; text-align:center;'>Aucune activité.</p>";
     historyData.forEach(h => {
       let cls = "text-red", sign = "-";
@@ -365,113 +413,173 @@
       const safeComment = (h.comment||"").replace(/'/g,"\\'");
 
       hL.innerHTML += `<div class="history-item" onclick="openEdit('${h.id}', '${safeName}', ${h.amount}, '${safeComment}')">
-        <div style="flex:1"><b>${h.name}</b><span class="history-date">${h.date}</span>${h.comment ? `<span class="history-comment">${h.comment}</span>` : ""}</div>
+        <div style="flex:1">
+          <b>${h.name}</b>
+          <span class="history-date">${h.date}</span>
+          <span class="history-account">${h.account}</span>
+          ${h.comment ? `<span class="history-comment">${h.comment}</span>` : ""}
+        </div>
         <div class="${cls}" style="white-space:nowrap">${sign}${formatMoney(h.amount)}</div>
       </div>`;
     });
   }
 
-  // --- ACTIONS ---
+  // --- NOUVEAU : DÉTAILS DE LA POCHE ---
+  function openPocketDetails(pocketName) {
+    const p = pockets.find(x => x.name === pocketName);
+    if(!p) return;
+
+    document.getElementById('pdTitle').innerText = p.name;
+    document.getElementById('pdPlanned').innerText = formatMoney(p.planned) + " FCFA";
+    document.getElementById('pdLeft').innerText = formatMoney(p.planned - p.spent) + " FCFA";
+    
+    const perc = p.planned > 0 ? Math.min((p.spent/p.planned)*100, 100) : 0;
+    let color = "#4caf50"; if(perc > 75) color = "#ffa000"; if(perc >= 100) color = "#e53935";
+    document.getElementById('pdBar').style.width = perc + "%";
+    document.getElementById('pdBar').style.background = color;
+
+    // Filtrer l'historique pour cette poche
+    const list = document.getElementById('pdHistory');
+    list.innerHTML = "";
+    const pocketHistory = historyData.filter(h => h.type === "Dépense" && h.name === pocketName);
+    
+    if(pocketHistory.length === 0) list.innerHTML = "<p style='color:#999; font-size: 14px;'>Aucune dépense ici.</p>";
+    pocketHistory.forEach(h => {
+      const safeComment = (h.comment||"").replace(/'/g,"\\'");
+      list.innerHTML += `<div class="history-item" onclick="openEdit('${h.id}', '${pocketName}', ${h.amount}, '${safeComment}')">
+        <div style="flex:1">
+          <span class="history-date">${h.date}</span>
+          ${h.comment ? `<span class="history-comment">${h.comment}</span>` : "<i>Sans note</i>"}
+        </div>
+        <div class="text-red">-${formatMoney(h.amount)}</div>
+      </div>`;
+    });
+
+    showScreen('pocketDetails');
+  }
+
+  // --- ACTIONS D'AJOUT ---
   async function addIncome(){
     const n = document.getElementById('incomeName').value, a = document.getElementById('incomeAmount').value, c = document.getElementById('incomeComment').value;
     if(!n || !a) return alert("Champs requis !");
-    showLoader(); await fetch(`${API}?action=add&type=income&name=${encodeURIComponent(n)}&amount=${a}&comment=${encodeURIComponent(c)}`, { redirect: "follow" });
+    showLoader(); await fetch(`${getApiUrl('add')}&type=income&name=${encodeURIComponent(n)}&amount=${a}&comment=${encodeURIComponent(c)}`, { redirect: "follow" });
     document.getElementById('incomeName').value=""; document.getElementById('incomeAmount').value=""; document.getElementById('incomeComment').value=""; load();
   }
 
   async function addPocket(){
     const n = document.getElementById('pocketName').value, a = document.getElementById('pocketAmount').value, c = document.getElementById('pocketComment').value;
     if(!n || !a) return alert("Champs requis !");
-    showLoader(); await fetch(`${API}?action=add&type=pocket&name=${encodeURIComponent(n)}&amount=${a}&comment=${encodeURIComponent(c)}`, { redirect: "follow" });
+    showLoader(); await fetch(`${getApiUrl('add')}&type=pocket&name=${encodeURIComponent(n)}&amount=${a}&comment=${encodeURIComponent(c)}`, { redirect: "follow" });
     document.getElementById('pocketName').value=""; document.getElementById('pocketAmount').value=""; document.getElementById('pocketComment').value=""; load();
   }
 
   async function addTx(){
     const p = document.getElementById('txPocket').value, a = document.getElementById('txAmount').value, c = document.getElementById('txComment').value;
     if(!p || p==="Sélectionner..." || !a) return alert("Sélectionnez une poche et un montant.");
-    showLoader(); await fetch(`${API}?action=tx&pocket=${encodeURIComponent(p)}&amount=${a}&comment=${encodeURIComponent(c)}`, { redirect: "follow" });
+    showLoader(); await fetch(`${getApiUrl('tx')}&pocket=${encodeURIComponent(p)}&amount=${a}&comment=${encodeURIComponent(c)}`, { redirect: "follow" });
     document.getElementById('txAmount').value=""; document.getElementById('txComment').value=""; load();
   }
 
   async function addTransfer(){
     const f = document.getElementById('transferFrom').value, t = document.getElementById('transferTo').value, a = document.getElementById('transferAmount').value;
     if(f === t || !a) return alert("Transfert invalide.");
-    showLoader(); await fetch(`${API}?action=transfer&from=${encodeURIComponent(f)}&to=${encodeURIComponent(t)}&amount=${a}`, { redirect: "follow" });
+    showLoader(); await fetch(`${getApiUrl('transfer')}&from=${encodeURIComponent(f)}&to=${encodeURIComponent(t)}&amount=${a}`, { redirect: "follow" });
     document.getElementById('transferAmount').value=""; load();
   }
 
   async function addDebt(){
     const p = document.getElementById('debtPerson').value, a = document.getElementById('debtAmount').value, t = document.getElementById('debtType').value;
     if(!p || !a) return alert("Champs requis !");
-    showLoader(); await fetch(`${API}?action=debt&person=${encodeURIComponent(p)}&amount=${a*t}`, { redirect: "follow" });
+    showLoader(); await fetch(`${getApiUrl('debt')}&person=${encodeURIComponent(p)}&amount=${a*t}`, { redirect: "follow" });
     document.getElementById('debtPerson').value=""; document.getElementById('debtAmount').value=""; load();
   }
 
-  // NOUVEAU : ÉDITER / SUPPRIMER
-  async function openEdit(id, name, amount, comment){
-    if(!id) return alert("Cette ancienne transaction ne possède pas d'identifiant et ne peut être modifiée.");
+  // --- NOUVEAU : GÉRER UNE DETTE ---
+  async function manageDebt(person, currentAmount) {
+    const action = prompt(`Dette de ${person} (${formatMoney(Math.abs(currentAmount))} FCFA)\n\n1 : Marquer comme remboursé\n2 : Voir dans l'historique pour supprimer\n\nTapez 1 ou 2 :`, "1");
     
-    const action = prompt(`Que faire avec : ${name} ?\nTapez 1 pour MODIFIER\nTapez 2 pour SUPPRIMER`, "1");
-
     if(action === "1") {
-      const newAmount = prompt(`Nouveau montant pour ${name} :`, amount);
-      if(newAmount === null || newAmount === "") return;
+      const isMeRepaying = currentAmount < 0; 
+      const amountToLog = isMeRepaying ? Math.abs(currentAmount) : -Math.abs(currentAmount);
+      const comment = "Remboursement";
       showLoader();
       try {
-        await fetch(`${API}?action=editTx&id=${id}&amount=${newAmount}&comment=${encodeURIComponent(comment)}`, { redirect: "follow" });
+        await fetch(`${getApiUrl('debt')}&person=${encodeURIComponent(person)}&amount=${amountToLog}&comment=${comment}`, { redirect: "follow" });
         await load();
-      } catch(e) { alert("Erreur réseau"); } finally { hideLoader(); }
+      } catch(e) { alert("Erreur"); hideLoader(); }
     } else if (action === "2") {
-      if(confirm("Supprimer définitivement cette transaction ?")) {
-        showLoader();
-        try {
-          await fetch(`${API}?action=deleteTx&id=${id}`, { redirect: "follow" });
-          await load();
-        } catch(e) { alert("Erreur réseau"); } finally { hideLoader(); }
-      }
+      showScreen('history');
+      alert(`Cherchez les opérations concernant "${person}" dans la liste ci-dessous pour les modifier ou les supprimer individuellement.`);
     }
   }
 
+  // --- NOUVEAU : ÉDITION UNIVERSELLE ---
+  async function editItemPrompt(id, name, currentAmount, typeName) {
+    const newAmount = prompt(`Nouveau montant pour [${typeName}] ${name} :`, currentAmount);
+    if(newAmount === null || newAmount === "") return;
+    showLoader();
+    try {
+      await fetch(`${getApiUrl('editItem')}&id=${id}&amount=${newAmount}&comment=`, { redirect: "follow" });
+      await load();
+    } catch(e) { alert("Erreur réseau"); } finally { hideLoader(); }
+  }
+
+  async function deleteItemPrompt(id, name, typeName) {
+    if(!confirm(`Supprimer définitivement : [${typeName}] ${name} ?`)) return;
+    showLoader();
+    try {
+      await fetch(`${getApiUrl('deleteItem')}&id=${id}`, { redirect: "follow" });
+      await load();
+    } catch(e) { alert("Erreur réseau"); } finally { hideLoader(); }
+  }
+
+  async function openEdit(id, name, amount, comment){
+    if(!id) return alert("Ancienne opération (sans ID), impossible à modifier.");
+    const action = prompt(`Action sur l'opération :\n1 : MODIFIER le montant\n2 : SUPPRIMER`, "1");
+
+    if(action === "1") {
+      const newAmount = prompt(`Nouveau montant :`, amount);
+      if(newAmount === null || newAmount === "") return;
+      showLoader();
+      try {
+        await fetch(`${getApiUrl('editItem')}&id=${id}&amount=${newAmount}&comment=${encodeURIComponent(comment)}`, { redirect: "follow" });
+        await load();
+      } catch(e) { alert("Erreur réseau"); } finally { hideLoader(); }
+    } else if (action === "2") {
+      deleteItemPrompt(id, name, "Opération");
+    }
+  }
+
+  // --- RESET & PDF ---
   async function resetKeep(){
     if(confirm("Nouveau mois ? (Poches et dettes conservées)")){
-      showLoader(); await fetch(`${API}?action=reset&mode=keepPockets`, { redirect: "follow" }); load();
+      showLoader(); await fetch(`${getApiUrl('reset')}&mode=keepPockets`, { redirect: "follow" }); load();
     }
   }
 
   async function resetAll(){
-    if(confirm("ATTENTION : Supprimer TOUTES les données ?")){
-      showLoader(); await fetch(`${API}?action=reset&mode=all`, { redirect: "follow" }); localStorage.removeItem("budgetCache"); load();
+    if(confirm("ATTENTION : Supprimer TOUTES les données de cet utilisateur ?")){
+      showLoader(); await fetch(`${getApiUrl('reset')}&mode=all`, { redirect: "follow" }); localStorage.removeItem("budgetCache_"+currentUser); load();
     }
   }
 
-  // NOUVEAU : EXPORT PDF
   function generatePDF() {
     showLoader();
-    
-    // Création d'une structure HTML propre pour le PDF (Fond blanc pour l'impression)
     const pdfContent = document.createElement('div');
-    pdfContent.style.padding = '30px';
-    pdfContent.style.background = '#ffffff';
-    pdfContent.style.color = '#000000';
-    pdfContent.style.fontFamily = 'Arial, sans-serif';
+    pdfContent.style.padding = '30px'; pdfContent.style.background = '#ffffff'; pdfContent.style.color = '#000000'; pdfContent.style.fontFamily = 'Arial';
     
-    const dateStr = new Date().toLocaleDateString('fr-FR');
     const totalInc = incomes.reduce((s,i)=>s+i.amount,0);
     const totalExp = pockets.reduce((s,p)=>s+p.spent,0);
-    const solde = totalInc - totalExp;
-
+    
     let html = `
-      <h1 style="color:#1565c0; border-bottom: 2px solid #1565c0; padding-bottom: 10px;">Bilan Budgétaire</h1>
-      <p><b>Date :</b> ${dateStr}</p>
-      
-      <div style="display:flex; margin-top:20px; margin-bottom: 30px; background:#f9f9f9; padding: 15px; border-radius: 8px;">
+      <h1 style="color:#1565c0; border-bottom: 2px solid #1565c0;">Bilan Budgétaire - ${currentUser}</h1>
+      <p><b>Date :</b> ${new Date().toLocaleDateString('fr-FR')}</p>
+      <div style="display:flex; margin-bottom: 30px; background:#f9f9f9; padding: 15px;">
         <div style="flex:1;"><b>Revenus :</b> <span style="color:#4caf50">${formatMoney(totalInc)} FCFA</span></div>
         <div style="flex:1;"><b>Dépenses :</b> <span style="color:#e53935">${formatMoney(totalExp)} FCFA</span></div>
-        <div style="flex:1;"><b>Solde :</b> <span><b>${formatMoney(solde)} FCFA</b></span></div>
       </div>
-      
       <h3 style="color:#1565c0;">État des Poches</h3>
-      <table style="width:100%; border-collapse: collapse; margin-bottom: 30px;">
+      <table style="width:100%; border-collapse: collapse;">
         <tr style="background:#1565c0; color:white; text-align:left;">
           <th style="padding:10px; border:1px solid #ddd;">Poche</th>
           <th style="padding:10px; border:1px solid #ddd;">Prévu</th>
@@ -479,35 +587,21 @@
           <th style="padding:10px; border:1px solid #ddd;">Reste</th>
         </tr>
     `;
-
     pockets.forEach(p => {
-      html += `
-        <tr>
-          <td style="padding:10px; border:1px solid #ddd;"><b>${p.name}</b></td>
-          <td style="padding:10px; border:1px solid #ddd;">${formatMoney(p.planned)}</td>
-          <td style="padding:10px; border:1px solid #ddd;">${formatMoney(p.spent)}</td>
-          <td style="padding:10px; border:1px solid #ddd; font-weight:bold;">${formatMoney(p.planned - p.spent)}</td>
-        </tr>
-      `;
+      html += `<tr>
+        <td style="padding:10px; border:1px solid #ddd;"><b>${p.name}</b></td>
+        <td style="padding:10px; border:1px solid #ddd;">${formatMoney(p.planned)}</td>
+        <td style="padding:10px; border:1px solid #ddd;">${formatMoney(p.spent)}</td>
+        <td style="padding:10px; border:1px solid #ddd; font-weight:bold;">${formatMoney(p.planned - p.spent)}</td>
+      </tr>`;
     });
-
-    html += `</table>
-      <p style="text-align:center; color:#777; font-size:12px; margin-top:40px;">Généré via l'application Mon Budget</p>
-    `;
-
+    html += `</table>`;
     pdfContent.innerHTML = html;
 
-    const opt = {
-      margin:       1,
-      filename:     `Bilan_Budget_${dateStr.replace(/\//g, '-')}.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2 },
-      jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
-    };
-
-    html2pdf().set(opt).from(pdfContent).save().then(() => {
-      hideLoader();
-    });
+    html2pdf().set({
+      margin: 1, filename: `Bilan_${currentUser}_${new Date().toLocaleDateString('fr-FR').replace(/\//g,'-')}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+    }).from(pdfContent).save().then(() => hideLoader());
   }
 </script>
 </body>
