@@ -632,14 +632,16 @@
       const absAmount = Math.abs(currentAmount);
       const dateStr = new Date().toLocaleString('fr-FR');
       const newId = "temp_" + Date.now();
+      
+      // Variable pour stocker la requête à envoyer à Google
+      let firstFetchUrl = "";
 
       if (isReceivable) {
         // --- CAS 1 : ON ME REMBOURSE (CRÉANCE) ---
         incomes.push({ id: newId, name: "Remb. reçu de " + person, amount: absAmount, comment: "Dette soldée" });
         historyData.unshift({ id: newId, type: "Revenu", name: "Remboursement " + person, amount: absAmount, date: dateStr, comment: "Argent récupéré", account: "Ajouté au Solde" });
         
-        // CORRECTION : On informe le serveur du nouveau revenu
-        fetch(`${getApiUrl('add')}&type=income&name=${encodeURIComponent("Remb. reçu de " + person)}&amount=${absAmount}&comment=Dette soldée`, { redirect: "follow" }).catch(e => console.error(e));
+        firstFetchUrl = `${getApiUrl('add')}&type=income&name=${encodeURIComponent("Remb. reçu de " + person)}&amount=${absAmount}&comment=Dette soldée`;
         
       } else {
         // --- CAS 2 : JE REMBOURSE (DETTE) ---
@@ -650,11 +652,10 @@
           incomes.push({ id: newId, name: "Remb. payé à " + person, amount: -absAmount, comment: "Dette soldée" });
           historyData.unshift({ id: newId, type: "Dépense", name: "Remboursement " + person, amount: absAmount, date: dateStr, comment: "Dette payée", account: "Déduit du Solde" });
           
-          // CORRECTION : On informe le serveur du revenu négatif
-          fetch(`${getApiUrl('add')}&type=income&name=${encodeURIComponent("Remb. payé à " + person)}&amount=${-absAmount}&comment=Dette soldée`, { redirect: "follow" }).catch(e => console.error(e));
+          firstFetchUrl = `${getApiUrl('add')}&type=income&name=${encodeURIComponent("Remb. payé à " + person)}&amount=${-absAmount}&comment=Dette soldée`;
 
         } else if (choice === "2") {
-          // Déduction d'une poche (tolère les minuscules/majuscules)
+          // Déduction d'une poche
           const pName = prompt("Entrez le NOM de la poche à débiter :\n" + pockets.map(p => p.name).join(", "));
           const pIndex = pockets.findIndex(p => p.name.toLowerCase() === (pName || "").toLowerCase().trim());
           
@@ -664,21 +665,30 @@
           pockets[pIndex].spent += absAmount;
           historyData.unshift({ id: newId, type: "Dépense", name: "Remboursement " + person, amount: absAmount, date: dateStr, comment: "Dette payée", account: "Poche : " + realPocketName });
           
-          // CORRECTION : On informe le serveur de la dépense dans la poche
-          fetch(`${getApiUrl('tx')}&pocket=${encodeURIComponent(realPocketName)}&amount=${absAmount}&comment=Dette payée`, { redirect: "follow" }).catch(e => console.error(e));
+          firstFetchUrl = `${getApiUrl('tx')}&pocket=${encodeURIComponent(realPocketName)}&amount=${absAmount}&comment=Dette payée`;
 
         } else {
           return; // Annulation
         }
       }
 
-      // Dans tous les cas, on informe le serveur que la dette est annulée
-      fetch(`${getApiUrl('debt')}&person=${encodeURIComponent(person)}&amount=${-currentAmount}&comment=Remboursement`, { redirect: "follow" }).catch(e => console.error(e));
-
-      // On nettoie la dette locale et on met à jour l'écran
+      // --- 1. MISE À JOUR DE L'ÉCRAN IMMÉDIATE (Pour la vitesse) ---
       debts = debts.filter(d => d.person !== person);
       localStorage.setItem("budgetCache_" + currentUser, JSON.stringify({incomes, pockets, history: historyData, debts}));
       updateUI();
+
+      // --- 2. ENVOI AU SERVEUR EN CASCADE (Pour contourner le bug Google) ---
+      const secondFetchUrl = `${getApiUrl('debt')}&person=${encodeURIComponent(person)}&amount=${-currentAmount}&comment=Remboursement`;
+
+      // On lance une petite tâche de fond silencieuse
+      (async () => {
+        try {
+          if(firstFetchUrl) await fetch(firstFetchUrl, { redirect: "follow" }); // On attend que Google ajoute le revenu/dépense
+          await fetch(secondFetchUrl, { redirect: "follow" }); // PUIS on lui dit d'annuler la dette
+        } catch(e) {
+          console.error("Erreur de synchronisation serveur", e);
+        }
+      })();
 
     } else if (action === "2") {
       showScreen('history');
