@@ -622,18 +622,25 @@
       .catch(e => console.error("Erreur serveur", e));
   }
 
-  async function manageDebt(person, currentAmount) {
+  function manageDebt(person, currentAmount) {
     const action = prompt(`Dette de ${person} (${formatMoney(Math.abs(currentAmount))} FCFA)\n\n1 : Marquer comme remboursé\n2 : Voir dans l'historique pour supprimer\n\nTapez 1 ou 2 :`, "1");
     
     if(action === "1") {
       const isMeRepaying = currentAmount < 0; 
       const amountToLog = isMeRepaying ? Math.abs(currentAmount) : -Math.abs(currentAmount);
-      const comment = "Remboursement";
-      showLoader();
-      try {
-        await fetch(`${getApiUrl('debt')}&person=${encodeURIComponent(person)}&amount=${amountToLog}&comment=${comment}`, { redirect: "follow" });
-        await load();
-      } catch(e) { alert("Erreur"); hideLoader(); }
+      
+      // 1. Mise à jour locale instantanée (on retire la dette)
+      debts = debts.filter(d => d.person !== person);
+      historyData.unshift({ id: "temp_" + Date.now(), type: "Dette", name: `Remboursement ${person}`, amount: Math.abs(currentAmount), date: new Date().toLocaleString('fr-FR'), comment: "Remboursement", account: "Compte Dette/Créance" });
+      
+      // 2. On actualise l'écran (0 seconde d'attente)
+      localStorage.setItem("budgetCache_" + currentUser, JSON.stringify({incomes, pockets, history: historyData, debts}));
+      updateUI();
+
+      // 3. Envoi silencieux au serveur
+      fetch(`${getApiUrl('debt')}&person=${encodeURIComponent(person)}&amount=${amountToLog}&comment=Remboursement`, { redirect: "follow" })
+        .catch(e => console.error("Erreur", e));
+
     } else if (action === "2") {
       showScreen('history');
       alert(`Cherchez les opérations concernant "${person}" dans la liste ci-dessous pour les modifier ou les supprimer individuellement.`);
