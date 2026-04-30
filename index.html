@@ -234,6 +234,11 @@
     const navBtn = document.getElementById("nav-" + (id==='pocketDetails' ? 'home' : id));
     if(navBtn) navBtn.classList.add("nav-active");
     
+    // NOUVEAU : Sauvegarde l'écran actuel pour cet utilisateur
+    if (currentUser) {
+      localStorage.setItem('activeScreen_' + currentUser, id);
+    }
+    
     if(id === 'home') updateGraph();
   }
 
@@ -282,13 +287,18 @@ function initApp() {
     document.getElementById('authScreen').style.display = 'none';
     document.getElementById('welcomeUser').innerText = `Connecté en tant que : ${user}`;
     document.getElementById('settingsUser').innerText = user;
+    
+    // NOUVEAU : Restaurer le dernier écran ou afficher l'accueil par défaut
+    const lastScreen = localStorage.getItem('activeScreen_' + user) || 'home';
+    showScreen(lastScreen);
+    
     load();
   }
 
   function logout() {
     localStorage.removeItem('budgetCache_' + currentUser);
+    localStorage.removeItem('activeScreen_' + currentUser); // NOUVEAU
     
-    // NOUVEAU : On supprime aussi les identifiants pour ne pas se reconnecter tout seul
     localStorage.removeItem('budgetUser');
     localStorage.removeItem('budgetPin');
     
