@@ -6,6 +6,7 @@
   <title>Mon Budget</title>
   <meta name="theme-color" content="#1565c0">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -13,22 +14,7 @@
 
     /* HEADER */
     .header { position: relative; padding:30px 16px 20px; background:#1565c0; text-align:center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
-    .header-settings { 
-  position: absolute; 
-  top: 15px; 
-  right: 15px; 
-  font-size: 22px; 
-  cursor: pointer;
-  /* On agrandit la zone cliquable pour le doigt */
-  padding: 10px; 
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15); /* Léger fond transparent */
-}
+    .header-settings { position: absolute; top: 15px; right: 15px; font-size: 22px; cursor: pointer; padding: 10px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(255, 255, 255, 0.15); }
     .balance { font-size:36px; font-weight:bold; margin-top: 5px; }
 
     /* SCREENS */
@@ -44,9 +30,10 @@
 
     /* INPUT & BUTTON */
     input, select { width:100%; padding:14px; margin-top:10px; border-radius:12px; border:1px solid #ddd; background:#f9f9f9; font-size: 16px; }
-    button { width:100%; padding:14px; margin-top:12px; border:none; border-radius:12px; background:#1565c0; color:white; font-weight:bold; font-size: 16px; transition: 0.2s; }
+    button { width:100%; padding:14px; margin-top:12px; border:none; border-radius:12px; background:#1565c0; color:white; font-weight:bold; font-size: 16px; transition: 0.2s; cursor:pointer;}
     button:active { opacity: 0.8; transform: scale(0.98); }
     .danger { background:#e53935; }
+    .success { background:#4caf50; }
     .btn-outline { background: transparent; border: 2px solid #1565c0; color: #1565c0; }
 
     /* NAVBAR & FAB */
@@ -61,7 +48,7 @@
     .bar { background:#eee; height:10px; border-radius:10px; overflow:hidden; margin-top:8px; }
 
     /* LISTS */
-    .history-item { display: flex; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid #eee; font-size: 14px;}
+    .history-item { display: flex; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid #eee; font-size: 14px; cursor: pointer; }
     .history-item:last-child { border-bottom: none; }
     .history-date { color: #999; font-size: 12px; display: block; margin-top: 3px;}
     .history-comment { color: #666; font-size: 12px; font-style: italic; display: block; margin-top: 5px; background: #f1f3f4; padding: 6px 10px; border-radius: 8px;}
@@ -163,12 +150,20 @@
 
 <div id="history" class="screen">
   <div class="card">
-    <b>📜 Historique des transactions</b>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <b>📜 Historique</b>
+        <small style="color:#777">Cliquez pour modifier</small>
+    </div>
     <div id="historyList" style="margin-top: 15px;"></div>
   </div>
 </div>
 
 <div id="settings" class="screen">
+  <div class="card">
+    <b>📊 Exporter les données</b>
+    <p style="font-size:12px; color:#666;">Générez un bilan mensuel au format PDF.</p>
+    <button class="success" onclick="generatePDF()">📥 Télécharger le Bilan PDF</button>
+  </div>
   <div class="card">
     <b>🔒 Sécurité : Changer le PIN</b>
     <input id="oldPin" type="password" placeholder="Ancien code PIN" maxlength="4" inputmode="numeric">
@@ -177,7 +172,7 @@
   </div>
   <div class="card">
     <b>⚠️ Gestion des données</b>
-    <button onclick="resetKeep()" style="background: #ffa000;">🔄 Nouveau mois (Garder les poches)</button>
+    <button onclick="resetKeep()" style="background: #ffa000;">🔄 Nouveau mois (Garder poches)</button>
     <button class="danger" onclick="resetAll()" style="margin-top: 15px;">🗑️ Tout effacer (RAZ)</button>
   </div>
 </div>
@@ -194,7 +189,7 @@
 <div id="loader"><div class="spinner"></div></div>
 
 <script>
-  const API = "https://script.google.com/macros/s/AKfycbzrQlpJuFe3PPYocxGCgvkQmM6-eGFYTgnnPYK1i88KW22kg0PBOfK59LzAhNk592qr/exec";
+  const API = "https://script.google.com/macros/s/AKfycbygLSp3sD0Fxdpgp2TmOlMmT28ifxNMTFdMvVP4oGQG-GTBVds3WiH7HZpxswT9t1TI/exec";
 
   let incomes = [], pockets = [], historyData = [], debts = [], myChart = null;
 
@@ -205,7 +200,6 @@
     document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
     document.getElementById(id).classList.add("active");
     
-    // Update navbar state
     document.querySelectorAll(".navbar button").forEach(b=>b.classList.remove("nav-active"));
     const navBtn = document.getElementById("nav-" + id);
     if(navBtn) navBtn.classList.add("nav-active");
@@ -284,16 +278,13 @@
       return;
     }
     
-    // 1. On rend le conteneur visible
     document.getElementById('chartContainer').style.display = "block";
 
-    // 2. Si on n'est pas sur l'accueil, on coupe tout
     if(!document.getElementById('home').classList.contains('active')) return;
 
-    // 3. LE FIX EST LÀ : On attend 50ms pour laisser le DOM s'afficher correctement
     setTimeout(() => {
       const ctx = canvas.getContext('2d');
-      if (myChart) myChart.destroy(); // On nettoie l'ancien
+      if (myChart) myChart.destroy(); 
       
       myChart = new Chart(ctx, {
         type: 'doughnut',
@@ -313,7 +304,7 @@
           } 
         }
       });
-    }, 50); // Le délai de 50ms
+    }, 50); 
   }
 
   function updateUI(){
@@ -324,7 +315,6 @@
     document.getElementById('income').innerText = formatMoney(totalInc);
     document.getElementById('expenses').innerText = formatMoney(totalExp);
 
-    // Listes et Selects
     const txP = document.getElementById('txPocket'), tF = document.getElementById('transferFrom'), tT = document.getElementById('transferTo');
     const pDiv = document.getElementById('pocketsDiv'), hP = document.getElementById('homePockets'), hL = document.getElementById('historyList'), dL = document.getElementById('debtsList');
 
@@ -336,7 +326,7 @@
       tF.innerHTML += `<option value="${p.name}">${p.name}</option>`;
       tT.innerHTML += `<option value="${p.name}">${p.name}</option>`;
 
-      const perc = Math.min((p.spent/p.planned)*100, 100);
+      const perc = p.planned > 0 ? Math.min((p.spent/p.planned)*100, 100) : 0;
       let color = "#4caf50"; if(perc > 75) color = "#ffa000"; if(perc >= 100) color = "#e53935";
 
       const html = `<div class="card">
@@ -347,12 +337,10 @@
       pDiv.innerHTML += html; hP.innerHTML += html;
     });
 
-    // On met à jour le graphique uniquement si on est sur l'écran d'accueil
     if(document.getElementById('home').classList.contains('active')) {
       updateGraph();
     }
 
-    // Dettes
     let toMe = 0, iOwe = 0;
     debts.forEach(d => {
       if(d.amount > 0) toMe += d.amount; else iOwe += Math.abs(d.amount);
@@ -366,13 +354,17 @@
     document.getElementById('owedToMe').innerText = formatMoney(toMe) + " FCFA";
     document.getElementById('iOwe').innerText = formatMoney(iOwe) + " FCFA";
 
-    // Historique
+    // NOUVEAU : Clic sur l'historique
     if(historyData.length === 0) hL.innerHTML = "<p style='color:#999; text-align:center;'>Aucune activité.</p>";
     historyData.forEach(h => {
       let cls = "text-red", sign = "-";
       if(h.type === "Revenu" || (h.type === "Dette" && h.name.includes("Emprunt"))) { cls = "text-green"; sign = "+"; }
       if(h.type === "Transfert") { cls = ""; sign = "🔄 "; }
-      hL.innerHTML += `<div class="history-item">
+      
+      const safeName = (h.name||"").replace(/'/g,"\\'");
+      const safeComment = (h.comment||"").replace(/'/g,"\\'");
+
+      hL.innerHTML += `<div class="history-item" onclick="openEdit('${h.id}', '${safeName}', ${h.amount}, '${safeComment}')">
         <div style="flex:1"><b>${h.name}</b><span class="history-date">${h.date}</span>${h.comment ? `<span class="history-comment">${h.comment}</span>` : ""}</div>
         <div class="${cls}" style="white-space:nowrap">${sign}${formatMoney(h.amount)}</div>
       </div>`;
@@ -396,7 +388,7 @@
 
   async function addTx(){
     const p = document.getElementById('txPocket').value, a = document.getElementById('txAmount').value, c = document.getElementById('txComment').value;
-    if(!p || !a) return alert("Sélectionnez une poche et un montant.");
+    if(!p || p==="Sélectionner..." || !a) return alert("Sélectionnez une poche et un montant.");
     showLoader(); await fetch(`${API}?action=tx&pocket=${encodeURIComponent(p)}&amount=${a}&comment=${encodeURIComponent(c)}`, { redirect: "follow" });
     document.getElementById('txAmount').value=""; document.getElementById('txComment').value=""; load();
   }
@@ -415,6 +407,31 @@
     document.getElementById('debtPerson').value=""; document.getElementById('debtAmount').value=""; load();
   }
 
+  // NOUVEAU : ÉDITER / SUPPRIMER
+  async function openEdit(id, name, amount, comment){
+    if(!id) return alert("Cette ancienne transaction ne possède pas d'identifiant et ne peut être modifiée.");
+    
+    const action = prompt(`Que faire avec : ${name} ?\nTapez 1 pour MODIFIER\nTapez 2 pour SUPPRIMER`, "1");
+
+    if(action === "1") {
+      const newAmount = prompt(`Nouveau montant pour ${name} :`, amount);
+      if(newAmount === null || newAmount === "") return;
+      showLoader();
+      try {
+        await fetch(`${API}?action=editTx&id=${id}&amount=${newAmount}&comment=${encodeURIComponent(comment)}`, { redirect: "follow" });
+        await load();
+      } catch(e) { alert("Erreur réseau"); } finally { hideLoader(); }
+    } else if (action === "2") {
+      if(confirm("Supprimer définitivement cette transaction ?")) {
+        showLoader();
+        try {
+          await fetch(`${API}?action=deleteTx&id=${id}`, { redirect: "follow" });
+          await load();
+        } catch(e) { alert("Erreur réseau"); } finally { hideLoader(); }
+      }
+    }
+  }
+
   async function resetKeep(){
     if(confirm("Nouveau mois ? (Poches et dettes conservées)")){
       showLoader(); await fetch(`${API}?action=reset&mode=keepPockets`, { redirect: "follow" }); load();
@@ -425,6 +442,72 @@
     if(confirm("ATTENTION : Supprimer TOUTES les données ?")){
       showLoader(); await fetch(`${API}?action=reset&mode=all`, { redirect: "follow" }); localStorage.removeItem("budgetCache"); load();
     }
+  }
+
+  // NOUVEAU : EXPORT PDF
+  function generatePDF() {
+    showLoader();
+    
+    // Création d'une structure HTML propre pour le PDF (Fond blanc pour l'impression)
+    const pdfContent = document.createElement('div');
+    pdfContent.style.padding = '30px';
+    pdfContent.style.background = '#ffffff';
+    pdfContent.style.color = '#000000';
+    pdfContent.style.fontFamily = 'Arial, sans-serif';
+    
+    const dateStr = new Date().toLocaleDateString('fr-FR');
+    const totalInc = incomes.reduce((s,i)=>s+i.amount,0);
+    const totalExp = pockets.reduce((s,p)=>s+p.spent,0);
+    const solde = totalInc - totalExp;
+
+    let html = `
+      <h1 style="color:#1565c0; border-bottom: 2px solid #1565c0; padding-bottom: 10px;">Bilan Budgétaire</h1>
+      <p><b>Date :</b> ${dateStr}</p>
+      
+      <div style="display:flex; margin-top:20px; margin-bottom: 30px; background:#f9f9f9; padding: 15px; border-radius: 8px;">
+        <div style="flex:1;"><b>Revenus :</b> <span style="color:#4caf50">${formatMoney(totalInc)} FCFA</span></div>
+        <div style="flex:1;"><b>Dépenses :</b> <span style="color:#e53935">${formatMoney(totalExp)} FCFA</span></div>
+        <div style="flex:1;"><b>Solde :</b> <span><b>${formatMoney(solde)} FCFA</b></span></div>
+      </div>
+      
+      <h3 style="color:#1565c0;">État des Poches</h3>
+      <table style="width:100%; border-collapse: collapse; margin-bottom: 30px;">
+        <tr style="background:#1565c0; color:white; text-align:left;">
+          <th style="padding:10px; border:1px solid #ddd;">Poche</th>
+          <th style="padding:10px; border:1px solid #ddd;">Prévu</th>
+          <th style="padding:10px; border:1px solid #ddd;">Dépensé</th>
+          <th style="padding:10px; border:1px solid #ddd;">Reste</th>
+        </tr>
+    `;
+
+    pockets.forEach(p => {
+      html += `
+        <tr>
+          <td style="padding:10px; border:1px solid #ddd;"><b>${p.name}</b></td>
+          <td style="padding:10px; border:1px solid #ddd;">${formatMoney(p.planned)}</td>
+          <td style="padding:10px; border:1px solid #ddd;">${formatMoney(p.spent)}</td>
+          <td style="padding:10px; border:1px solid #ddd; font-weight:bold;">${formatMoney(p.planned - p.spent)}</td>
+        </tr>
+      `;
+    });
+
+    html += `</table>
+      <p style="text-align:center; color:#777; font-size:12px; margin-top:40px;">Généré via l'application Mon Budget</p>
+    `;
+
+    pdfContent.innerHTML = html;
+
+    const opt = {
+      margin:       1,
+      filename:     `Bilan_Budget_${dateStr.replace(/\//g, '-')}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(pdfContent).save().then(() => {
+      hideLoader();
+    });
   }
 </script>
 </body>
